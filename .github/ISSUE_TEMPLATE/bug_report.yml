@@ -1,0 +1,29 @@
+name: Bug report
+description: Report a reproducible MarOS problem, without private data.
+body:
+  - type: input
+    id: version
+    attributes:
+      label: MarOS version
+      placeholder: 4.0.0-beta.1
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device, Android version and remote
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps and expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result and redacted evidence
+      description: Do not attach backups, credentials, local addresses, pairing codes or private viewing data.
+    validations:
+      required: true

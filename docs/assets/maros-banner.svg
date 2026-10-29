@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400" role="img" aria-labelledby="title desc">
+  <title id="title">MarOS — Your TV. Your space.</title><desc id="desc">MarOS mountain monogram on a dark landscape illustration.</desc>
+  <defs><linearGradient id="sky" x2="1" y2="1"><stop stop-color="#1b3043"/><stop offset="1" stop-color="#090d15"/></linearGradient><linearGradient id="peak" x2="0" y2="1"><stop stop-color="#375666"/><stop offset="1" stop-color="#111c2a"/></linearGradient></defs>
+  <rect width="1200" height="400" rx="28" fill="url(#sky)"/>
+  <path d="M630 400 840 120 1012 342 1082 230 1200 400Z" fill="url(#peak)"/>
+  <path d="m790 185 50-65 56 73-52-24Z" fill="#75959b" opacity=".3"/>
+  <path d="M660 400 840 120 760 400Z" fill="#587c86" opacity=".12"/>
+  <path d="M78 143 99 101Q101 97 104 101L125 143M110 143 132 101Q135 97 137 101L157 143" fill="none" stroke="#87dcf5" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="183" y="145" fill="#f5f8fc" font-family="Manrope,Arial,sans-serif" font-size="66" font-weight="600" letter-spacing="-3">MarOS</text>
+  <text x="78" y="236" fill="#f5f8fc" font-family="Manrope,Arial,sans-serif" font-size="40" font-weight="500" letter-spacing="-1">Your TV. Your space.</text>
+  <text x="79" y="285" fill="#a1afbf" font-family="Manrope,Arial,sans-serif" font-size="20">Native Android TV home · Local phone companion</text>
+  <path d="M79 329H148" stroke="#87dcf5" stroke-width="3" stroke-linecap="round"/>
+</svg>

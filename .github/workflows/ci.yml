@@ -1,0 +1,83 @@
+name: Build and checks
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      device_smoke:
+        description: Also run a headless Android 11 emulator smoke test
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Install Android build dependencies
+        run: sdkmanager 'platforms;android-34' 'build-tools;34.0.0'
+      - name: Source and behavioral checks
+        run: python tools/check.py
+      - name: Build and verify debug APK
+        run: python launcher/build.py --platform 34 --build-tools 34.0.0
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: MarOS-debug
+          path: |
+            launcher/build/MarOS-debug.apk
+            launcher/build/MarOS-debug.apk.sha256
+          if-no-files-found: error
+          retention-days: 7
+  device-smoke:
+    if: github.event_name == 'workflow_dispatch' && inputs.device_smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Install Android build and test dependencies
+        run: sdkmanager 'platforms;android-34' 'build-tools;34.0.0' 'emulator' 'system-images;android-30;aosp_atd;x86_64'
+      - name: Build debug APK
+        run: python launcher/build.py --platform 34 --build-tools 34.0.0
+      - name: Start isolated emulator
+        run: |
+          sudo chmod a+rw /dev/kvm
+          printf 'no\n' | avdmanager create avd --name maros_ci --package 'system-images;android-30;aosp_atd;x86_64' --force
+          "$ANDROID_HOME/emulator/emulator" -avd maros_ci -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect > "$RUNNER_TEMP/maros-emulator.log" 2>&1 &
+          adb -s emulator-5554 wait-for-device
+          for n in $(seq 1 120); do
+            if [ "$(adb -s emulator-5554 shell getprop sys.boot_completed | tr -d '\r')" = "1" ]; then break; fi
+            sleep 2
+          done
+          test "$(adb -s emulator-5554 shell getprop sys.boot_completed | tr -d '\r')" = "1"
+          adb -s emulator-5554 shell input keyevent KEYCODE_WAKEUP
+          adb -s emulator-5554 shell wm dismiss-keyguard
+      - name: Native launch, navigation and companion checks
+        run: python tools/smoke_android.py --serial emulator-5554 --apk launcher/build/MarOS-debug.apk --out build/device-smoke
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: Android-smoke-report
+          path: build/device-smoke/
+          if-no-files-found: warn
+          retention-days: 7

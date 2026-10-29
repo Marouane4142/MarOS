@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MarOS</string>
+    <string name="all_apps">TOUTES LES APPLIS</string>
+    <string name="inputs">Entrées</string>
+    <string name="wifi">Wi-Fi</string>
+    <string name="wifi_off">Wi-Fi désactivé</string>
+    <string name="settings">Réglages</string>
+    <string name="live_tv">TV en direct</string>
+    <string name="all_sources">Toutes les sources…</string>
+    <string name="good_night">BONNE NUIT</string>
+    <string name="good_morning">BONJOUR</string>
+    <string name="good_afternoon">BON APRÈS-MIDI</string>
+    <string name="good_evening">BONSOIR</string>
+</resources>

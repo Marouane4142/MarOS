@@ -1,0 +1,37 @@
+# Never publish signing or device credentials.
+*.keystore
+*.jks
+*.p12
+*.pfx
+*.key
+adbkey*
+.env
+.env.*
+!.env.example
+*.pem
+!docs/release-signing-public.pem
+# Local device state and build products.
+launcher/.local/
+launcher/build/
+build/
+dist/
+backup/
+backups/
+outputs/
+shots/
+work/
+*.apk
+*.aab
+*.zip
+*.log
+local.properties
+.agents/
+.codex/
+.idea/
+.vscode/
+.venv/
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

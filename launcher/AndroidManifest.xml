@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="io.github.marouane4142.maros"
+    android:versionCode="40000"
+    android:versionName="4.0.0-beta.1">
+
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.READ_TV_LISTINGS" />
+
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+
+    <queries>
+        <package android:name="com.android.vending" />
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+        </intent>
+    </queries>
+
+    <application
+        android:label="@string/app_name"
+        android:icon="@drawable/maros_app"
+        android:banner="@drawable/maros_app"
+        android:allowBackup="false"
+        android:usesCleartextTraffic="true"
+        android:theme="@style/Home">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:stateNotNeeded="false"
+            android:excludeFromRecents="true"
+            android:screenOrientation="landscape"
+            android:windowSoftInputMode="adjustNothing"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|uiMode|density">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".SettingsActivity" android:exported="false" android:screenOrientation="landscape" />
+        <activity android:name=".HubActivity" android:exported="false" android:screenOrientation="landscape" />
+        <activity android:name=".RemoteBridgeActivity" android:exported="false" android:screenOrientation="landscape" />
+        <activity android:name=".AmbientActivity" android:exported="false" android:screenOrientation="landscape" />
+        <receiver android:name=".HubActivity$TimerReceiver" android:exported="false" />
+        <service android:name=".CompanionService" android:exported="false" />
+        <service android:name=".RemoteButtonService" android:exported="true" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" android:label="Boutons de la tÃ©lÃ©commande MarOS">
+            <intent-filter><action android:name="android.accessibilityservice.AccessibilityService" /></intent-filter>
+            <meta-data android:name="android.accessibilityservice" android:resource="@xml/remote_accessibility" />
+        </service>
+        <service android:name=".MediaListener" android:exported="true" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" android:label="Lecture en cours MarOS">
+            <intent-filter><action android:name="android.service.notification.NotificationListenerService" /></intent-filter>
+        </service>
+        <service android:name=".AmbientDreamService" android:exported="true" android:permission="android.permission.BIND_DREAM_SERVICE" android:label="Paysages MarOS">
+            <intent-filter><action android:name="android.service.dreams.DreamService" /></intent-filter>
+        </service>
+    </application>
+</manifest>

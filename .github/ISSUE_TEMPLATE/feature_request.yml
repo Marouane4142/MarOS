@@ -1,0 +1,16 @@
+name: Feature request
+description: Suggest a concrete improvement for the TV or companion.
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What would this help you do?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Suggested behavior and required equipment
+      description: Describe a remote-friendly flow and any services/devices it needs.
+    validations:
+      required: true
