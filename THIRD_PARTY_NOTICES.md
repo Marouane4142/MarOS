@@ -13,3 +13,5 @@ The MIT license for MarOS code does not replace the licenses of bundled third-pa
 Pinned upstream revisions for the added graphical and QR resources are recorded in [third-party-revisions.json](docs/third-party-revisions.json). Lucide SVGs were converted to Android VectorDrawable resources. Landscape photographs are resized/cropped for TV use; preserve their original attribution and license links when redistributing adaptations. Their licenses do not relicense the independent Java application as CC BY-SA.
 
 Application names and logos shown by MarOS are loaded from applications installed by the user. MarOS does not distribute those applications or claim affiliation with their publishers. Development design guidelines are not runtime components and are not bundled in this repository.
+
+The original upstream license file, including its separate-photo-license clarification, is preserved verbatim in [upstream-license.txt](docs/upstream-license.txt). Full MIT and asset notices are also bundled in the APK and available in Advanced → About and licenses.
