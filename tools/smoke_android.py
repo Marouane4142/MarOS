@@ -24,7 +24,11 @@ def main():
     args.out.mkdir(parents=True,exist_ok=True)
     report={'checks':[],'device':'Android emulator','package':PACKAGE}
     def call(*command,binary=False,input=None,timeout=60):
-        r=subprocess.run([adb,'-s',args.serial,*command],input=input,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=timeout,check=True)
+        r=subprocess.run([adb,'-s',args.serial,*command],input=input,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=timeout)
+        if r.returncode:
+            details=r.stderr.decode('utf-8','replace')
+            if command[0]=='install':details+='\n'+r.stdout.decode('utf-8','replace')
+            raise RuntimeError('ADB '+command[0]+' failed: '+details[-2500:])
         return r.stdout if binary else r.stdout.decode('utf-8','replace').replace('\r\n','\n')
     def shell(command):return call('shell',command)
     def capture(name):(args.out/(name+'.png')).write_bytes(call('exec-out','screencap','-p',binary=True))

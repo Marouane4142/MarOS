@@ -1,6 +1,6 @@
 # Changelog
 
-## 4.0.0-beta.1 — 2026-10-29
+## 4.0.0-beta.1 — 2026-10-30
 
 First public MarOS beta, derived from the private 4.0 iteration of tv-home.
 

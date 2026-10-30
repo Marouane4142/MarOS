@@ -60,13 +60,13 @@ jobs:
       - name: Install Android build and test dependencies
         uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4
       - name: Install platform, build tools and emulator image
-        run: sdkmanager 'platforms;android-34' 'build-tools;34.0.0' 'emulator' 'system-images;android-30;aosp_atd;x86_64'
+        run: sdkmanager 'platforms;android-34' 'build-tools;34.0.0' 'emulator' 'system-images;android-30;google_apis;x86_64'
       - name: Build debug APK
         run: python launcher/build.py --platform 34 --build-tools 34.0.0
       - name: Start isolated emulator
         run: |
           sudo chmod a+rw /dev/kvm
-          printf 'no\n' | avdmanager create avd --name maros_ci --package 'system-images;android-30;aosp_atd;x86_64' --force
+          printf 'no\n' | avdmanager create avd --name maros_ci --package 'system-images;android-30;google_apis;x86_64' --force
           "$ANDROID_HOME/emulator/emulator" -avd maros_ci -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect > "$RUNNER_TEMP/maros-emulator.log" 2>&1 &
           adb -s emulator-5554 wait-for-device
           for n in $(seq 1 120); do
@@ -74,6 +74,7 @@ jobs:
             sleep 2
           done
           test "$(adb -s emulator-5554 shell getprop sys.boot_completed | tr -d '\r')" = "1"
+          adb -s emulator-5554 shell pm path android
           adb -s emulator-5554 shell input keyevent KEYCODE_WAKEUP
           adb -s emulator-5554 shell wm dismiss-keyguard
       - name: Native launch, navigation and companion checks

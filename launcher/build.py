@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build MarOS with the Android SDK and a JDK. Never connects to or changes a TV."""
 import argparse
+import copy
 import hashlib
 import os
 from pathlib import Path
@@ -80,7 +81,12 @@ def main():
             for entry in original.infolist():
                 name=entry.filename.replace('\\','/')
                 if name in seen:raise RuntimeError('Duplicate APK path: '+name)
-                seen.add(name);target.writestr(name,original.read(entry))
+                seen.add(name)
+                normalized=copy.copy(entry);normalized.filename=name
+                # Android 11+ requires resources.arsc to remain STORED and 4-byte aligned.
+                # Preserve aapt2's compression decisions rather than recompressing all entries.
+                if name=='resources.arsc':normalized.compress_type=zipfile.ZIP_STORED
+                target.writestr(normalized,original.read(entry))
             for dex in sorted((stage/'dex').glob('classes*.dex')):target.write(dex,dex.name)
         run([align,'-f','4',stage/'unsigned.apk',stage/'aligned.apk'])
         run([java,'-jar',tools/'lib/apksigner.jar','sign','--ks',keystore,'--ks-key-alias',args.alias,*password_args,'--out',stage/'signed.apk',stage/'aligned.apk'])
@@ -88,6 +94,7 @@ def main():
         run([java,'-jar',tools/'lib/apksigner.jar','verify','--verbose',stage/'signed.apk'])
         with zipfile.ZipFile(stage/'signed.apk') as apk:
             names=apk.namelist()
+            if apk.getinfo('resources.arsc').compress_type!=zipfile.ZIP_STORED:raise RuntimeError('Android 11 requires uncompressed resources.arsc')
             if len(set(names))!=len(names) or any('\\' in n for n in names):raise RuntimeError('Invalid APK paths')
             photos=[n for n in names if re.fullmatch(r'assets/wallpapers/\d+\.jpg',n)]
             if len(photos)!=12:raise RuntimeError('Expected 12 bundled landscapes')
