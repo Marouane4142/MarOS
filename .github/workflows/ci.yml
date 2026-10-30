@@ -77,6 +77,10 @@ jobs:
           adb -s emulator-5554 shell pm path android
           adb -s emulator-5554 shell input keyevent KEYCODE_WAKEUP
           adb -s emulator-5554 shell wm dismiss-keyguard
+          # A phone AVD's default 640x320 logical canvas is not a TV layout.
+          # Match a 1080p TV at 320 dpi: 960x540 logical landscape units.
+          adb -s emulator-5554 shell wm size 1080x1920
+          adb -s emulator-5554 shell wm density 320
       - name: Native launch, navigation and companion checks
         run: python tools/smoke_android.py --serial emulator-5554 --apk launcher/build/MarOS-debug.apk --out build/device-smoke
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
