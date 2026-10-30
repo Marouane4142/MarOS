@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       device_smoke:
-        description: Also run a headless Android 11 emulator smoke test
+        description: Also run a headless Android TV 11 emulator smoke test
         type: boolean
         default: false
 permissions:
@@ -60,13 +60,13 @@ jobs:
       - name: Install Android build and test dependencies
         uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4
       - name: Install platform, build tools and emulator image
-        run: sdkmanager 'platforms;android-34' 'build-tools;34.0.0' 'emulator' 'system-images;android-30;google_apis;x86_64'
+        run: sdkmanager 'platforms;android-34' 'build-tools;34.0.0' 'emulator' 'system-images;android-30;android-tv;x86'
       - name: Build debug APK
         run: python launcher/build.py --platform 34 --build-tools 34.0.0
       - name: Start isolated emulator
         run: |
           sudo chmod a+rw /dev/kvm
-          printf 'no\n' | avdmanager create avd --name maros_ci --package 'system-images;android-30;google_apis;x86_64' --force
+          printf 'no\n' | avdmanager create avd --name maros_ci --package 'system-images;android-30;android-tv;x86' --device 'tv_1080p' --force
           "$ANDROID_HOME/emulator/emulator" -avd maros_ci -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect > "$RUNNER_TEMP/maros-emulator.log" 2>&1 &
           adb -s emulator-5554 wait-for-device
           for n in $(seq 1 120); do
@@ -77,10 +77,8 @@ jobs:
           adb -s emulator-5554 shell pm path android
           adb -s emulator-5554 shell input keyevent KEYCODE_WAKEUP
           adb -s emulator-5554 shell wm dismiss-keyguard
-          # A phone AVD's default 640x320 logical canvas is not a TV layout.
-          # Match a 1080p TV at 320 dpi: 960x540 logical landscape units.
-          adb -s emulator-5554 shell wm size 1080x1920
-          adb -s emulator-5554 shell wm density 320
+          adb -s emulator-5554 shell wm size
+          adb -s emulator-5554 shell wm density
       - name: Native launch, navigation and companion checks
         run: python tools/smoke_android.py --serial emulator-5554 --apk launcher/build/MarOS-debug.apk --out build/device-smoke
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

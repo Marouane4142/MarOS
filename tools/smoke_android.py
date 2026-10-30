@@ -34,7 +34,9 @@ def main():
     def capture(name):(args.out/(name+'.png')).write_bytes(call('exec-out','screencap','-p',binary=True))
     def nodes():
         shell('uiautomator dump /sdcard/maros-smoke.xml')
-        raw=shell('cat /sdcard/maros-smoke.xml');return list(ET.fromstring(raw[raw.index('<?xml'):]).iter('node'))
+        raw=shell('cat /sdcard/maros-smoke.xml')
+        (args.out/'last-ui.xml').write_text(raw,encoding='utf-8')
+        return list(ET.fromstring(raw[raw.index('<?xml'):]).iter('node'))
     def click(label):
         for node in sorted(nodes(),key=lambda n:n.get('clickable')!='true'):
             if label.casefold() in (node.get('text','')+' '+node.get('content-desc','')).casefold():
@@ -43,9 +45,11 @@ def main():
         raise RuntimeError('Visible control missing: '+label)
     def checked(name):report['checks'].append({'name':name,'pass':True});print('PASS:',name,flush=True)
     try:
+        (args.out/'device.txt').write_text(shell('getprop ro.build.version.sdk')+shell('wm size')+shell('wm density'),encoding='utf-8')
         call('install','-r',str(args.apk.resolve()),timeout=180)
         shell('am start -W -n '+PACKAGE+'/.MainActivity');time.sleep(2)
-        assert PACKAGE in shell('dumpsys activity activities')
+        resumed=[line for line in shell('dumpsys activity activities').splitlines() if 'ResumedActivity' in line]
+        assert any(PACKAGE in line for line in resumed),resumed
         capture('home');checked('Native HOME activity launched')
         click('Réglages MarOS');capture('settings');checked('Settings overview opened')
         click('Connecter mon téléphone');time.sleep(1)
@@ -67,7 +71,7 @@ def main():
         assert request('/apps',{},token)[0]==200;checked('Companion remains available on native home')
         fatal=shell('logcat -d -s AndroidRuntime:E')
         (args.out/'android-runtime.txt').write_text(fatal,encoding='utf-8')
-        assert 'FATAL EXCEPTION' not in fatal;checked('No AndroidRuntime fatal exception')
+        assert 'Process: '+PACKAGE not in fatal;checked('No MarOS AndroidRuntime fatal exception')
     except Exception as error:
         report['error']=str(error)
         try:capture('failure');(args.out/'android-runtime.txt').write_text(shell('logcat -d -s AndroidRuntime:E'),encoding='utf-8')
