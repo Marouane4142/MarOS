@@ -1,0 +1,38 @@
+{
+  "checks": [
+    {
+      "name": "Native HOME activity launched",
+      "pass": true
+    },
+    {
+      "name": "Settings overview opened",
+      "pass": true
+    },
+    {
+      "name": "Local companion serves its page",
+      "pass": true
+    },
+    {
+      "name": "Companion rejects an unauthenticated API request",
+      "pass": true
+    },
+    {
+      "name": "Visible code pairs a client",
+      "pass": true
+    },
+    {
+      "name": "Same paired session survives another app",
+      "pass": true
+    },
+    {
+      "name": "Companion remains available on native home",
+      "pass": true
+    },
+    {
+      "name": "No MarOS AndroidRuntime fatal exception",
+      "pass": true
+    }
+  ],
+  "device": "Android emulator",
+  "package": "io.github.marouane4142.maros"
+}

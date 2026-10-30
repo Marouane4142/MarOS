@@ -2,6 +2,8 @@
 
 This guide is for Android TV / Google TV devices running Android 11 or later. The public beta uses `io.github.marouane4142.maros`, separate from the earlier private `com.mihir.tvhome` package. Do not reuse a private device backup from another device or user.
 
+If migrating from the earlier private package, close its phone-companion session first: both packages use port 8765. Enable special access only for the version you intend to use. Keep the previous app and its data for rollback; the public APK does not import them automatically.
+
 ## 1. Prepare
 
 Download the APK and checksum file from [Releases](https://github.com/Marouane4142/MarOS/releases). Verify the SHA-256 before installing. ADB Platform-Tools and Python 3.10+ are required for the journaled path; Android SDK Build-Tools are also needed to verify a first-install APK's package.

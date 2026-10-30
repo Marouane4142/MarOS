@@ -12,6 +12,12 @@ The private predecessor was exercised on Xiaomi TV Box S 2nd generation / Androi
 
 The public beta has a new package and signer, generic app defaults, opt-in city weather and a portable build. It is a distinct install. The initial release notes state what was tested for this exact public snapshot; tests of the predecessor are not presented as exhaustive certification of this package.
 
+## Public beta smoke result
+
+The public app installed and ran on the Android TV 11 / API 30 emulator using a 1920×1080 display at 320 dpi. All eight recorded checks passed: native launch, settings overview, local page serving, rejection without a token, code pairing, session continuity in another app, availability back on MarOS and absence of a MarOS AndroidRuntime fatal exception.
+
+Evidence: [successful Actions run](https://github.com/Marouane4142/MarOS/actions/runs/41031959796), [recorded checks](qa/android-tv-smoke.json), [device metrics](qa/device.txt) and the actual captures under `docs/assets/`. The tests use an isolated emulator and do not change a physical TV. CI uses a debug signer; official APK signatures are separately verified.
+
 ## Device test checklist
 
 - First launch and Back/DPAD focus, Home from inside another app, large text, reduced animations.

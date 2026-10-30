@@ -2,6 +2,7 @@
 
 <p align="center">
   <a href="https://github.com/Marouane4142/MarOS/releases"><img alt="Releases" src="https://img.shields.io/github/v/release/Marouane4142/MarOS?include_prereleases&color=87dcf5&label=release"></a>
+  <a href="https://github.com/Marouane4142/MarOS/actions/workflows/ci.yml"><img alt="Build and checks" src="https://github.com/Marouane4142/MarOS/actions/workflows/ci.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/code-MIT-87dcf5"></a>
   <img alt="Android 11 and later" src="https://img.shields.io/badge/Android-11%2B-87dcf5">
   <img alt="Native Java" src="https://img.shields.io/badge/native-Java-87dcf5">
@@ -10,6 +11,12 @@
 **A personal home for Android TV and Google TV.** Native, remote-friendly, and free of advertising in the launcher. Your apps, your landscapes, your music — with a local phone companion.
 
 [Français](docs/README.fr.md) · [Download](https://github.com/Marouane4142/MarOS/releases) · [Installation](docs/INSTALLATION.md) · [Contributing](CONTRIBUTING.md)
+
+## Preview
+
+<img src="docs/assets/home.png" alt="MarOS running on an Android TV 11 emulator with YouTube and Play Store available" width="960">
+
+Actual clean-install Android TV emulator capture. Available favorites depend on installed apps; no personal accounts or viewing data are shown. [Settings preview](docs/assets/settings.png) · [Screenshot and backdrop credits](docs/assets/README.md).
 
 ## What you get
 
