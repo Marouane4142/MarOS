@@ -57,6 +57,14 @@ public final class AmbientActivity extends Activity {
         private boolean running,released;
         private int generation,index;
         private Bitmap displayed;
+        private final SharedPreferences.OnSharedPreferenceChangeListener privacy=(store,key)->{
+            if("guest_mode".equals(key))handler.post(this::refreshPrivacy);
+        };
+        private void refreshPrivacy(){
+            if(!running||released)return;
+            generation++;album=photos.list();index=0;
+            image.setImageDrawable(null);displayed=null;caption.setText("");show(index);
+        }
         private final Runnable rotate=new Runnable(){public void run(){if(!running)return;next();handler.postDelayed(this,rotationMillis());}};
         private final Runnable tick=new Runnable(){public void run(){if(!running)return;updateTime();handler.postDelayed(this,60000-System.currentTimeMillis()%60000);}};
 
@@ -75,13 +83,15 @@ public final class AmbientActivity extends Activity {
         private long rotationMillis(){return Math.max(1,Math.min(120,prefs.getInt("wallpaper_minutes",10)))*60000L;}
         public void start(){
             if(running||released)return;running=true;album=photos.list();
+            prefs.registerOnSharedPreferenceChangeListener(privacy);
+            if(RoomData.guest(getContext())){image.setImageDrawable(null);displayed=null;caption.setText("");}
             timeBox.setVisibility(prefs.getBoolean("ambient_clock",true)?VISIBLE:GONE);
             String last=prefs.getString("ambient_photo_id","");index=0;
             for(int i=0;i<album.size();i++)if(album.get(i).id.equals(last)){index=i;break;}
             handler.post(tick);show(index);handler.postDelayed(rotate,rotationMillis());
         }
         public void stop(){
-            running=false;generation++;handler.removeCallbacksAndMessages(null);
+            running=false;generation++;prefs.unregisterOnSharedPreferenceChangeListener(privacy);handler.removeCallbacksAndMessages(null);
         }
         public void release(){
             stop();released=true;loader.shutdownNow();image.setImageDrawable(null);displayed=null;

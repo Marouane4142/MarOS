@@ -1,0 +1,114 @@
+{
+  "version": "5.0.0-beta.1",
+  "date": "2026-10-31",
+  "device": "Xiaomi TV Box S 2nd generation",
+  "api": 30,
+  "build": "optimized release variant; official signing checked separately",
+  "checks": [
+    {
+      "name": "Compose HOME launches with a readable native screen",
+      "pass": true
+    },
+    {
+      "name": "Horizontal dock navigation leaves the first viewport fixed",
+      "pass": true
+    },
+    {
+      "name": "Resume is below the first viewport and becomes visible only when navigating down past essentials",
+      "pass": true
+    },
+    {
+      "name": "DPAD selects the video catalog",
+      "pass": true
+    },
+    {
+      "name": "Repeated directional focus changes remain responsive",
+      "pass": true
+    },
+    {
+      "name": "Remote MENU opens the Compose personalization screen",
+      "pass": true
+    },
+    {
+      "name": "Daily settings contain only appearance, apps and phone",
+      "pass": true
+    },
+    {
+      "name": "Companion requires pairing and rejects foreign origins",
+      "pass": true
+    },
+    {
+      "name": "Phone changes favorite order and restores it exactly",
+      "pass": true
+    },
+    {
+      "name": "140 percent text remains usable and the phone session survives an app change",
+      "pass": true
+    },
+    {
+      "name": "All five themes persist, render and preserve the compact layout",
+      "pass": true
+    },
+    {
+      "name": "Extra compact layout remains available independently of text size",
+      "pass": true
+    },
+    {
+      "name": "Local profiles isolate visual preferences",
+      "pass": true
+    },
+    {
+      "name": "Paired phone receives a local banner preview",
+      "pass": true
+    },
+    {
+      "name": "Temporary review changes restored to the original settings",
+      "pass": true
+    },
+    {
+      "name": "Phone controls HOME, rejects arbitrary commands and never injects keys into other apps",
+      "pass": true
+    },
+    {
+      "name": "Native Google account is available without implying OAuth authorization",
+      "pass": true
+    },
+    {
+      "name": "Guest mode hides personal feeds, Google and archive export, then restores visibility",
+      "pass": true
+    },
+    {
+      "name": "Personal list progresses independently and the real TVmaze API returns selectable series",
+      "pass": true
+    },
+    {
+      "name": "Personal ZIP validates images/types, rejects traversal, self-restores and keeps a previous-state archive",
+      "pass": true
+    },
+    {
+      "name": "Long-operation queue acknowledges immediately and returns a real local Cast diagnostic",
+      "pass": true
+    },
+    {
+      "name": "Repeated returns from Android Settings keep HOME usable",
+      "pass": true
+    },
+    {
+      "name": "No fatal exception for the current launcher process",
+      "pass": true
+    }
+  ],
+  "kotlin_tests": 7,
+  "chronology_assertions": 17,
+  "lint_errors": 0,
+  "native_account_flow": [
+    "system picker fallback without stock launcher",
+    "cancel preserves profile",
+    "selected native account persists after APK update",
+    "same account reuses profile",
+    "separate calendar permission denial and grant",
+    "unlink preserves Android account"
+  ],
+  "cloud_oauth_tested": false,
+  "private_data_included": false
+}

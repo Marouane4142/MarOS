@@ -21,7 +21,7 @@ public final class LauncherPrefs {
     private final SharedPreferences prefs;
     public LauncherPrefs(Context c) { context = c.getApplicationContext(); prefs = context.getSharedPreferences("tvhome_v2", Context.MODE_PRIVATE); }
     public SharedPreferences prefs() { return prefs; }
-    public String theme() { String s=getString("theme", "nature"); return Arrays.asList("nature","cinema","minimal").contains(s)?s:"nature"; }
+    public String theme() { String s=getString("theme", "nature"); return Arrays.asList("nature","cinema","minimal","aurora","dune").contains(s)?s:"nature"; }
     public int getInt(String key,int fallback) { try { return prefs.getInt(key,fallback); } catch(ClassCastException e) { return fallback; } }
     public boolean getBool(String key,boolean fallback) { try { return prefs.getBoolean(key,fallback); } catch(ClassCastException e) { return fallback; } }
     public String getString(String key,String fallback) { try { return prefs.getString(key,fallback); } catch(ClassCastException e) { return fallback; } }
@@ -50,18 +50,19 @@ public final class LauncherPrefs {
     public static boolean validPackage(String p) { return p!=null&&p.length()<180&&p.matches("[A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+"); }
 
     /** An explicit allowlist ensures secrets from integrations never enter a portable backup. */
-    private static final Set<String> PORTABLE = new HashSet<>(Arrays.asList("theme","accent","home_title","tile_size","contrast","wallpaper_minutes","reduced_animations","ambient_minutes","show_clock","text_scale","photo_mode","show_photo_credit","show_weather","weather_city","show_storage","show_timer","show_calendar","clock_24h","show_greeting","remember_navigation","ambient_clock","show_collections","show_continue","show_music","show_info","show_games","dock","hidden"));
-    private static final Set<String> NUMBERS = new HashSet<>(Arrays.asList("contrast","wallpaper_minutes","ambient_minutes","text_scale"));
-    private static final Set<String> STRINGS = new HashSet<>(Arrays.asList("theme","accent","home_title","tile_size","photo_mode","weather_city"));
+    private static final Set<String> PORTABLE = new HashSet<>(Arrays.asList("theme","accent","home_title","ui_scale","tile_size","contrast","wallpaper_minutes","reduced_animations","ambient_minutes","show_clock","text_scale","photo_mode","show_photo_credit","show_weather","weather_city","show_storage","show_timer","show_calendar","clock_24h","show_greeting","remember_navigation","ambient_clock","show_collections","show_continue","show_music","show_info","show_games","dock","hidden","home_rows","hidden_rows","show_recent_apps"));
+    private static final Set<String> NUMBERS = new HashSet<>(Arrays.asList("contrast","wallpaper_minutes","ambient_minutes","text_scale","ui_scale"));
+    private static final Set<String> STRINGS = new HashSet<>(Arrays.asList("theme","accent","home_title","tile_size","photo_mode","weather_city","home_rows"));
     public String exportConfiguration() throws Exception {
         JSONObject data=new JSONObject();
         // A portable backup describes the effective configuration, including
         // defaults that Android has never needed to write to SharedPreferences.
         data.put("accent","ice").put("home_title","");
+        data.put("home_rows","[]");
         data.put("theme","nature").put("tile_size","normal").put("photo_mode","all").put("weather_city","");
-        data.put("contrast",45).put("wallpaper_minutes",10).put("ambient_minutes",5).put("text_scale",100);
+        data.put("contrast",45).put("wallpaper_minutes",10).put("ambient_minutes",5).put("text_scale",100).put("ui_scale",85);
         for(String key:PORTABLE) {
-            if(!NUMBERS.contains(key)&&!STRINGS.contains(key)&&!key.equals("dock")&&!key.equals("hidden"))
+            if(!NUMBERS.contains(key)&&!STRINGS.contains(key)&&!key.equals("dock")&&!key.equals("hidden")&&!key.equals("hidden_rows"))
                 data.put(key,!key.equals("reduced_animations"));
         }
         for(Map.Entry<String,?> item:prefs.getAll().entrySet()) {
@@ -70,19 +71,20 @@ public final class LauncherPrefs {
                 if(value instanceof String&&Arrays.asList("regarder","musique","jeux","outils").contains(value)) data.put(k,value);
                 continue;
             }
-            if(!PORTABLE.contains(k)||k.equals("dock")||k.equals("hidden")) continue;
+            if(!PORTABLE.contains(k)||k.equals("dock")||k.equals("hidden")||k.equals("hidden_rows")) continue;
             Object fallback=data.opt(k);
             if(fallback instanceof Boolean&&value instanceof Boolean) data.put(k,value);
             else if(fallback instanceof Integer&&value instanceof Integer) {
                 int n=(Integer)value;
-                if(k.equals("contrast")) n=Math.max(0,Math.min(80,n));
+                if(k.equals("ui_scale")) n=Math.max(75,Math.min(110,n));
+                else if(k.equals("contrast")) n=Math.max(0,Math.min(80,n));
                 else if(k.equals("text_scale")) n=Math.max(85,Math.min(140,n));
                 else if(k.equals("wallpaper_minutes")) n=Math.max(1,Math.min(1440,n));
                 else if(k.equals("ambient_minutes")) n=Math.max(0,Math.min(120,n));
                 data.put(k,n);
             } else if(fallback instanceof String&&value instanceof String&&((String)value).length()<500) {
                 String s=(String)value;
-                if(k.equals("theme")&&!Arrays.asList("nature","cinema","minimal").contains(s)) continue;
+                if(k.equals("theme")&&!Arrays.asList("nature","cinema","minimal","aurora","dune").contains(s)) continue;
                 if(k.equals("accent")&&!Arrays.asList("ice","sage","rose","amber").contains(s)) continue;
                 if(k.equals("home_title")&&s.length()>70) continue;
                 if(k.equals("tile_size")&&!Arrays.asList("small","normal","large").contains(s)) continue;
@@ -97,6 +99,7 @@ public final class LauncherPrefs {
         for(String pkg:hidden()) if(validPackage(pkg)) effectiveHidden.add(pkg);
         Collections.sort(effectiveHidden);
         data.put("hidden",new JSONArray(effectiveHidden.subList(0,Math.min(250,effectiveHidden.size()))));
+        data.put("hidden_rows",new JSONArray(prefs.getStringSet("hidden_rows",new HashSet<>())));
         return new JSONObject().put("format","tvhome-settings").put("version",2).put("settings",data).toString(2);
     }
     public int importConfiguration(String json) throws Exception {
@@ -106,12 +109,13 @@ public final class LauncherPrefs {
             String key=keys.next(); if(!PORTABLE.contains(key)&&!(key.startsWith("category_")&&validPackage(key.substring(9)))) continue;
             Object value=values.get(key);
             if(key.equals("dock")) { JSONArray a=value instanceof JSONArray?(JSONArray)value:new JSONArray(String.valueOf(value)); if(a.length()>250) throw new IllegalArgumentException("Trop de favoris."); ArrayList<String> clean=new ArrayList<>(); for(int i=0;i<a.length();i++) if(validPackage(a.optString(i))) clean.add(a.optString(i)); e.putString(key,new JSONArray(clean).toString()); }
+            else if(key.equals("hidden_rows")) { JSONArray a=(JSONArray)value; Set<String> set=new HashSet<>(); for(int i=0;i<a.length();i++) if(Arrays.asList("favorites","continue","recent","library","shortcuts").contains(a.optString(i)))set.add(a.optString(i));e.putStringSet(key,set); }
             else if(key.equals("hidden")) { JSONArray a=(JSONArray)value; Set<String> set=new HashSet<>(); for(int i=0;i<a.length()&&i<250;i++) if(validPackage(a.optString(i))) set.add(a.optString(i)); e.putStringSet(key,set); }
             else if(value instanceof Boolean&&!NUMBERS.contains(key)&&!STRINGS.contains(key)&&!key.startsWith("category_")) e.putBoolean(key,(Boolean)value);
-            else if(value instanceof Number&&NUMBERS.contains(key)) { long raw=((Number)value).longValue(); int n=(int)Math.max(0,Math.min(1440,raw)); if(key.equals("contrast")) n=Math.max(0,Math.min(80,n)); else if(key.equals("text_scale")) n=Math.max(85,Math.min(140,n)); else if(key.equals("wallpaper_minutes")) n=Math.max(1,Math.min(1440,n)); else if(key.equals("ambient_minutes")) n=Math.max(0,Math.min(120,n)); e.putInt(key,n); }
+            else if(value instanceof Number&&NUMBERS.contains(key)) { long raw=((Number)value).longValue(); int n=(int)Math.max(0,Math.min(1440,raw)); if(key.equals("ui_scale")) n=Math.max(75,Math.min(110,n)); else if(key.equals("contrast")) n=Math.max(0,Math.min(80,n)); else if(key.equals("text_scale")) n=Math.max(85,Math.min(140,n)); else if(key.equals("wallpaper_minutes")) n=Math.max(1,Math.min(1440,n)); else if(key.equals("ambient_minutes")) n=Math.max(0,Math.min(120,n)); e.putInt(key,n); }
             else if(value instanceof String && ((String)value).length()<500&&(STRINGS.contains(key)||key.startsWith("category_"))) {
                 String s=(String)value;
-                if(key.equals("theme")&&!Arrays.asList("nature","cinema","minimal").contains(s)) continue;
+                if(key.equals("theme")&&!Arrays.asList("nature","cinema","minimal","aurora","dune").contains(s)) continue;
                 if(key.equals("accent")&&!Arrays.asList("ice","sage","rose","amber").contains(s)) continue;
                 if(key.equals("home_title")&&s.length()>70) continue;
                 if(key.equals("tile_size")&&!Arrays.asList("small","normal","large").contains(s)) continue;
@@ -124,5 +128,22 @@ public final class LauncherPrefs {
         }
         if(count==0) throw new IllegalArgumentException("Aucun réglage compatible dans le fichier.");
         e.apply(); changed(); return count;
+    }
+    /** Structural validation for staged archives, before any images or settings are written. */
+    public static void validatePortable(String json) throws Exception {
+        JSONObject root=new JSONObject(json);
+        if(!"tvhome-settings".equals(root.optString("format"))||root.optInt("version")!=2)throw new IllegalArgumentException("Format de réglages invalide");
+        JSONObject settings=root.getJSONObject("settings");if(settings.length()>500)throw new IllegalArgumentException("Trop de réglages");
+        java.util.Iterator<String> names=settings.keys();while(names.hasNext()){
+            String key=names.next();Object value=settings.get(key);
+            if(key.startsWith("category_")){if(!validPackage(key.substring(9))||!(value instanceof String)||!Arrays.asList("regarder","musique","jeux","outils").contains(value))throw new IllegalArgumentException("Collection invalide");continue;}
+            if(!PORTABLE.contains(key))continue;
+            if(key.equals("dock")||key.equals("hidden")||key.equals("hidden_rows")){
+                if(!(value instanceof JSONArray))throw new IllegalArgumentException("Liste attendue pour "+key);JSONArray a=(JSONArray)value;if(a.length()>250)throw new IllegalArgumentException("Liste trop longue");
+                for(int i=0;i<a.length();i++){if(!(a.get(i) instanceof String))throw new IllegalArgumentException("Nom attendu");if(key.equals("hidden_rows")){if(!Arrays.asList("favorites","continue","recent","library","shortcuts").contains(a.getString(i)))throw new IllegalArgumentException("Section inconnue");}else if(!validPackage(a.getString(i)))throw new IllegalArgumentException("Application invalide");}
+            }else if(NUMBERS.contains(key)){if(!(value instanceof Number))throw new IllegalArgumentException("Nombre attendu pour "+key);}
+            else if(STRINGS.contains(key)){if(!(value instanceof String)||((String)value).length()>=500)throw new IllegalArgumentException("Texte invalide pour "+key);}
+            else if(!(value instanceof Boolean))throw new IllegalArgumentException("Valeur oui/non attendue pour "+key);
+        }
     }
 }

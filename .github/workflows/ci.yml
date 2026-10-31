@@ -24,18 +24,20 @@ jobs:
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
       - name: Install Android build dependencies
         uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4
       - name: Install platform and build tools
-        run: sdkmanager 'platforms;android-34' 'build-tools;34.0.0'
+        run: sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0'
       - name: Source and behavioral checks
         run: python tools/check.py
       - name: Build and verify debug APK
-        run: python launcher/build.py --platform 34 --build-tools 34.0.0
+        run: python launcher/build.py
+      - name: Kotlin tests and Android Lint
+        run: sh gradlew :launcher:testDebugUnitTest :launcher:lintDebug
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: MarOS-debug
@@ -53,16 +55,16 @@ jobs:
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
       - name: Install Android build and test dependencies
         uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4
       - name: Install platform, build tools and emulator image
-        run: sdkmanager 'platforms;android-34' 'build-tools;34.0.0' 'emulator' 'system-images;android-30;android-tv;x86'
+        run: sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0' 'emulator' 'system-images;android-30;android-tv;x86'
       - name: Build debug APK
-        run: python launcher/build.py --platform 34 --build-tools 34.0.0
+        run: python launcher/build.py
       - name: Start isolated emulator
         run: |
           sudo chmod a+rw /dev/kvm

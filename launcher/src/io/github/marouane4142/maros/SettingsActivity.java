@@ -53,6 +53,7 @@ public final class SettingsActivity extends Activity {
     private String section="overview", bannerPackage="";
     private ExecutorService worker=Executors.newSingleThreadExecutor();
     private volatile int pageGeneration=0;
+    private int photoPage=0;
     private final Map<String,String> appNames=new HashMap<>();
 
     @Override public void onCreate(Bundle state) {
@@ -67,14 +68,14 @@ public final class SettingsActivity extends Activity {
     private int accent(){return MarOSUI.accent(this);}
     private void buildFrame() {
         getWindow().getDecorView().setSystemUiVisibility(5894);
-        LinearLayout root=new LinearLayout(this);root.setOrientation(0);root.setBackground(MarOSUI.background());root.setPadding(dp(28),dp(22),dp(30),dp(22));
-        navigation=new LinearLayout(this);navigation.setOrientation(1);navigation.setPadding(dp(12),dp(8),dp(12),dp(12));navigation.setBackground(MarOSUI.border(this,0xB9111B2C,0x1C6783AC,20));root.addView(navigation,new LinearLayout.LayoutParams(dp(216),-1));
+        LinearLayout root=new LinearLayout(this);root.setOrientation(android.widget.LinearLayout.HORIZONTAL);root.setBackground(MarOSUI.background());root.setPadding(dp(28),dp(22),dp(30),dp(22));
+        navigation=new LinearLayout(this);navigation.setOrientation(android.widget.LinearLayout.VERTICAL);navigation.setPadding(dp(12),dp(8),dp(12),dp(12));navigation.setBackground(MarOSUI.border(this,0xB9111B2C,0x1C6783AC,20));root.addView(navigation,new LinearLayout.LayoutParams(dp(216),-1));
         navigation.addView(MarOSUI.brand(this,true),new LinearLayout.LayoutParams(-1,dp(70)));
         nav("À votre façon","overview");nav("Applications","apps");nav("Photos & ambiance","photos");nav("Mon téléphone","phone");nav("Avancé","advanced");
         View spacer=new View(this);navigation.addView(spacer,new LinearLayout.LayoutParams(1,0,1));Button back=button("Retour à l’accueil",()->finish());navigation.addView(back,new LinearLayout.LayoutParams(-1,dp(44)));
-        LinearLayout right=new LinearLayout(this);right.setOrientation(1);right.setPadding(dp(30),dp(7),0,0);root.addView(right,new LinearLayout.LayoutParams(0,-1,1));
+        LinearLayout right=new LinearLayout(this);right.setOrientation(android.widget.LinearLayout.VERTICAL);right.setPadding(dp(30),dp(7),0,0);root.addView(right,new LinearLayout.LayoutParams(0,-1,1));
         heading=text("Réglages",28,TEXT);heading.setTypeface(MarOSUI.type(this,true));LinearLayout.LayoutParams hp=new LinearLayout.LayoutParams(-1,-2);hp.topMargin=dp(12);right.addView(heading,hp);description=text("",11,MUTED);description.setPadding(0,dp(7),0,dp(20));right.addView(description);
-        ScrollView scroll=new ScrollView(this);pageScroll=scroll;scroll.setVerticalScrollBarEnabled(false);scroll.setClipToPadding(false);scroll.setPadding(0,dp(3),dp(5),dp(18));right.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));content=new LinearLayout(this);content.setOrientation(1);scroll.addView(content,new ScrollView.LayoutParams(-1,-2));setContentView(root);
+        ScrollView scroll=new ScrollView(this);pageScroll=scroll;scroll.setVerticalScrollBarEnabled(false);scroll.setClipToPadding(false);scroll.setPadding(0,dp(3),dp(5),dp(18));right.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));content=new LinearLayout(this);content.setOrientation(android.widget.LinearLayout.VERTICAL);scroll.addView(content,new ScrollView.LayoutParams(-1,-2));setContentView(root);
     }
     private void nav(String label,String id){Button b=button(label,()->showSection(id));b.setTag(id);b.setTextSize(12);b.setPadding(dp(12),0,dp(10),0);b.setCompoundDrawables(new MarOSUI.Icon(MarOSUI.iconFor(label),accent(),dp(18)),null,null,null);LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,dp(45));lp.setMargins(0,dp(3),0,dp(3));navigation.addView(b,lp);b.setOnFocusChangeListener((v,has)->{MarOSUI.navState(b,section.equals(id));if(has)b.setBackground(MarOSUI.border(this,0xFF2B405E,accent(),12));});}
     private void showSection(String id) {
@@ -91,16 +92,17 @@ public final class SettingsActivity extends Activity {
         label("VOS ESSENTIELS");action("Organiser mes applications",()->showSection("apps"));action("Choisir mes photos",()->showSection("photos"));action("Connecter mon téléphone",()->HubActivity.open(this,"phone"));action("Personnaliser mon message d’accueil",this::editHomeTitle);
     }
     private void advancedPage(){title("Les détails, si vous le souhaitez.","Votre configuration est déjà prête. Ces réglages restent facultatifs.");action("À propos et licences",this::aboutLicenses);action("Style, couleurs et lisibilité",()->showSection("appearance"));action("Informations et widgets",()->showSection("widgets"));action("Connexions et appareils",()->showSection("connections"));action("Sauvegarde et restauration",()->showSection("backup"));action("Boutons de la télécommande",()->startActivity(new Intent(this,RemoteBridgeActivity.class)));action("Réglages Android",()->safeStart(new Intent(Settings.ACTION_SETTINGS)));}
-    private void aboutLicenses(){String[] labels={"MarOS · licence MIT","tv-home · notice d’origine","Lucide · ISC / MIT","Manrope · SIL OFL 1.1","QR Code · Nayuki MIT","Paysages · auteurs et licences"};String[] files={"MarOS-MIT.txt","upstream-tv-home.txt","lucide.txt","Manrope-OFL.txt","qrcode-generator.txt","wallpaper-credits.txt"};MarOSUI.choose(this,"MarOS 4.0.0-beta.1","Dérivé de tv-home par Mihir Gupta · contributions MarOS par Marouane4142.",labels,index->{try(java.io.InputStream in=getAssets().open("licenses/"+files[index]);java.io.ByteArrayOutputStream bytes=new java.io.ByteArrayOutputStream()){byte[] buffer=new byte[4096];int n;while((n=in.read(buffer))!=-1)bytes.write(buffer,0,n);TextView body=text(new String(bytes.toByteArray(),java.nio.charset.StandardCharsets.UTF_8),12,TEXT);body.setPadding(dp(22),dp(12),dp(22),dp(12));ScrollView scroll=new ScrollView(this);scroll.addView(body);new AlertDialog.Builder(this).setTitle(labels[index]).setView(scroll).setPositiveButton("Fermer",null).show();}catch(Exception e){error(e);}});}
+    private void aboutLicenses(){String[] labels={"MarOS · licence MIT","tv-home · notice d’origine","Lucide · ISC / MIT","Manrope · SIL OFL 1.1","QR Code · Nayuki MIT","Paysages · auteurs et licences","AndroidX et Kotlin · Apache 2.0"};String[] files={"MarOS-MIT.txt","upstream-tv-home.txt","lucide.txt","Manrope-OFL.txt","qrcode-generator.txt","wallpaper-credits.txt","AndroidX-Apache-2.0.txt"};MarOSUI.choose(this,"MarOS "+BuildConfig.VERSION_NAME,"Dérivé de tv-home par Mihir Gupta · contributions MarOS par Marouane4142.",labels,index->{try(java.io.InputStream in=getAssets().open("licenses/"+files[index]);java.io.ByteArrayOutputStream bytes=new java.io.ByteArrayOutputStream()){byte[] buffer=new byte[4096];int n;while((n=in.read(buffer))!=-1)bytes.write(buffer,0,n);TextView body=text(new String(bytes.toByteArray(),java.nio.charset.StandardCharsets.UTF_8),12,TEXT);body.setPadding(dp(22),dp(12),dp(22),dp(12));ScrollView scroll=new ScrollView(this);scroll.addView(body);new AlertDialog.Builder(this).setTitle(labels[index]).setView(scroll).setPositiveButton("Fermer",null).show();}catch(Exception e){error(e);}});}
     private void appearancePage() {
         title("Un espace à votre image.","Choisissez l’atmosphère, les couleurs et les détails qui font la différence.");
         LinearLayout previews=new LinearLayout(this);String[] themes={"nature","cinema","minimal"},names={"Nature","Cinéma","Minimal"};int[] colors={0xFF285D69,0xFF343050,0xFF2D3B50};
         for(int i=0;i<themes.length;i++){final String key=themes[i];Button b=button(names[i]+(prefs.theme().equals(key)?"  ·  Actuel":""),()->{prefs.putString("theme",key);showSection("appearance");});b.setCompoundDrawables(null,null,null,null);b.setGravity(Gravity.BOTTOM|Gravity.LEFT);GradientDrawable preview=new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{colors[i],0xFF101A2C});preview.setCornerRadius(dp(14));preview.setStroke(dp(1),prefs.theme().equals(key)?accent():0x334E6584);b.setBackground(preview);b.setOnFocusChangeListener((v,has)->{preview.setStroke(dp(has?2:1),has?accent():prefs.theme().equals(key)?accent():0x334E6584);});LinearLayout.LayoutParams pp=new LinearLayout.LayoutParams(0,dp(68),1);pp.setMargins(0,0,dp(i==2?0:10),dp(16));previews.addView(b,pp);}content.addView(previews);
         choice("Couleur de signature","accent",new String[]{"ice","sage","rose","amber"},new String[]{"Bleu glacier","Sauge","Rose poudré","Ambre"},"ice");
         action("Message d’accueil personnalisé",this::editHomeTitle);
-        choice("Thème visuel","theme",new String[]{"nature","cinema","minimal"},new String[]{"Nature · lumineux et apaisant","Cinéma · profond et discret","Minimal · l’essentiel"},"nature");
+        choice("Thème visuel","theme",new String[]{"nature","cinema","minimal","aurora","dune"},new String[]{"Glacier · bleu profond","Cinéma · noir discret","Minimal · l’essentiel","Aurore · vert boréal","Dune · ambre chaleureux"},"nature");
         choice("Taille des vignettes","tile_size",new String[]{"small","normal","large"},new String[]{"Petite · plus d’applications","Normale · équilibrée","Grande · confort de lecture"},"normal");
         number("Ombre derrière les informations","contrast",new int[]{20,30,45,60,75,80}," %",45);
+        number("Échelle de l’interface","ui_scale",new int[]{75,85,100,110}," %",85);
         number("Taille des textes","text_scale",new int[]{85,100,110,120,130,140}," %",100);
         toggle("Animations réduites","Des transitions immédiates et plus sobres.","reduced_animations",false);
         toggle("Mémoriser la navigation","Retrouver le dernier favori et votre position.","remember_navigation",true);
@@ -154,6 +156,7 @@ public final class SettingsActivity extends Activity {
         new AlertDialog.Builder(this).setTitle("Placer "+appTitle(pkg)).setItems(labels.toArray(new String[0]),(d,where)->{ source.add(where,pkg); prefs.setDock(source); Set<String> h=prefs.hidden();h.remove(pkg);prefs.setHidden(h);showSection("apps");toast("Favori déplacé"); }).setNegativeButton("Annuler",null).show();
     }
     private void photosPage() {
+        if(RoomData.guest(this)){title("Photos personnelles","Masquées en mode invités. Retrouvez votre espace pour gérer l’album.");return;}
         title("Photos & ambiance","Des paysages intégrés et vos propres souvenirs, conservés sur la box.");
         action("Envoyer des photos depuis mon téléphone",()->HubActivity.open(this,"phone"));
         action("Importer depuis un fichier Android",()->pickImage(PICK_PHOTOS,true));
@@ -164,9 +167,13 @@ public final class SettingsActivity extends Activity {
         toggle("Horloge en mode ambiant","Une heure discrète sur les photos plein écran.","ambient_clock",true);
         toggle("Afficher le lieu et les crédits","Les photographes et les licences des paysages intégrés.","show_photo_credit",true);
         action("Ouvrir le mode ambiant maintenant",()->openAmbient());
-        label("VOTRE ALBUM · "+photos.all().size()+" PHOTOS");
+        List<PhotoStore.Photo> album=photos.all();
+        photoPage=Math.max(0,Math.min(photoPage,Math.max(0,(album.size()-1)/12)));
+        label("VOTRE ALBUM · "+album.size()+" PHOTOS · PAGE "+(photoPage+1));
+        if(photoPage>0)action("Page précédente",()->{photoPage--;showSection("photos");});
+        if((photoPage+1)*12<album.size())action("Page suivante",()->{photoPage++;showSection("photos");});
         final int generation=pageGeneration; int count=0; LinearLayout grid=null;
-        for(PhotoStore.Photo p:photos.all()) {
+        for(PhotoStore.Photo p:album.subList(photoPage*12,Math.min(album.size(),(photoPage+1)*12))) {
             if(count%3==0) { grid=new LinearLayout(this); grid.setOrientation(LinearLayout.HORIZONTAL); grid.setPadding(0,dp(5),0,dp(6)); content.addView(grid); }
             LinearLayout card=new LinearLayout(this); card.setOrientation(LinearLayout.VERTICAL); card.setPadding(dp(7),dp(7),dp(7),dp(9)); card.setFocusable(true); card.setClickable(true); card.setBackground(shape(PANEL,12));
             LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(0,dp(145),1); cp.setMargins(0,0,dp(10),0); grid.addView(card,cp);
@@ -206,7 +213,7 @@ public final class SettingsActivity extends Activity {
         action("Importer des réglages sauvegardés",()->{Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.setType("*/*");i.addCategory(Intent.CATEGORY_OPENABLE);pick(i,IMPORT);});
         note("Ce qui est inclus","Thème, favoris, applications masquées, collections, taille des vignettes, photos et widgets. L’import fusionne les préférences du fichier avec vos réglages actuels.");
         note("Ce qui reste sur cette box","Les photos et bannières personnelles, les mots de passe, les jetons, les adresses des services, les événements privés et les autorisations Android ne sont pas exportés.");
-        action("Réinitialiser seulement le style visuel",()->new AlertDialog.Builder(this).setTitle("Retrouver le style Nature ?").setMessage("Les favoris, photos, connexions et applications masquées sont conservés.").setPositiveButton("Réinitialiser le style",(d,w)->{prefs.prefs().edit().remove("theme").remove("accent").remove("home_title").remove("tile_size").remove("contrast").remove("text_scale").remove("reduced_animations").apply();prefs.changed();showSection("appearance");}).setNegativeButton("Annuler",null).show());
+        action("Réinitialiser seulement le style visuel",()->new AlertDialog.Builder(this).setTitle("Retrouver le style Nature ?").setMessage("Les favoris, photos, connexions et applications masquées sont conservés.").setPositiveButton("Réinitialiser le style",(d,w)->{prefs.prefs().edit().remove("theme").remove("accent").remove("home_title").remove("tile_size").remove("contrast").remove("text_scale").remove("ui_scale").remove("reduced_animations").apply();prefs.changed();showSection("appearance");}).setNegativeButton("Annuler",null).show());
         note("Restauration de la TV","Les outils ADB du dépôt restaurent les opérations journalisées avec votre sauvegarde. Consultez le guide d’installation et de retour arrière. Rien ici ne désinstalle d’application.");
     }
     private void pickImage(int request,boolean multiple) { Intent intent=new Intent(Intent.ACTION_OPEN_DOCUMENT);intent.addCategory(Intent.CATEGORY_OPENABLE);intent.setType("image/*");intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE,multiple);intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);pick(intent,request); }
@@ -230,7 +237,7 @@ public final class SettingsActivity extends Activity {
     private Button button(String title,Runnable action){return MarOSUI.button(this,title,MarOSUI.iconFor(title),action);}
     private void focus(View v){MarOSUI.focus(v);}
     private void editHomeTitle(){EditText input=new EditText(this);input.setText(prefs.getString("home_title",""));input.setHint("Votre soirée, à votre rythme.");input.setTextColor(TEXT);input.setSingleLine(true);input.setPadding(dp(20),dp(14),dp(20),dp(14));new AlertDialog.Builder(this).setTitle("Votre message d’accueil").setView(input).setPositiveButton("Enregistrer",(d,w)->{String value=input.getText().toString().trim();prefs.putString("home_title",value.substring(0,Math.min(70,value.length())));}).setNeutralButton("Message par défaut",(d,w)->prefs.putString("home_title","")).setNegativeButton("Annuler",null).show();}
-    private TextView text(String value,int sp,int color) {TextView t=MarOSUI.text(this,value,sp,color);t.setTextColor(color);t.setTextSize(sp);return t;}
+    private TextView text(String value,int sp,int color) {TextView t=MarOSUI.text(this,value,sp,color);t.setTextColor(color);return t;}
     private GradientDrawable shape(int color,int radius) {GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(dp(radius));return d;}
     private int dp(float value) {return Math.round(value*getResources().getDisplayMetrics().density);}
     private void toast(String value) {if(!isFinishing())Toast.makeText(this,value,Toast.LENGTH_LONG).show();}

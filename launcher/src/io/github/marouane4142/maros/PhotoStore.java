@@ -54,7 +54,7 @@ public final class PhotoStore {
     }
     public List<Photo> list() {
         List<Photo> included=new ArrayList<>(), favorites=new ArrayList<>();
-        for(Photo p:all()) if(!p.excluded) { included.add(p); if(p.favorite) favorites.add(p); }
+        for(Photo p:all()) if(!p.excluded && (!RoomData.guest(context)||p.builtin)) { included.add(p); if(p.favorite) favorites.add(p); }
         // Never leave the user with an empty album merely because no favorite was selected yet.
         return "favorites".equals(new LauncherPrefs(context).getString("photo_mode","all"))&&!favorites.isEmpty()?favorites:included;
     }
@@ -76,6 +76,8 @@ public final class PhotoStore {
         } catch(RuntimeException|OutOfMemoryError e) { return null; }
     }
     public boolean hasBanner(String pkg) { return LauncherPrefs.validPackage(pkg)&&new File(banners,pkg+".jpg").isFile(); }
+    public InputStream openPortablePhoto(String id) throws IOException { if(!validLocalId(id))throw new IOException("Photo personnelle attendue");return new FileInputStream(fileFor(id)); }
+    public File portableBanner(String pkg) { return LauncherPrefs.validPackage(pkg)?new File(banners,pkg+".jpg"):null; }
     public String source(Photo p) { if(p==null||!p.builtin) return ""; try { int n=Integer.parseInt(p.id.substring(6,8))-1; if(n>=0&&n<SOURCES.length) return "https://commons.wikimedia.org/wiki/File:"+Uri.encode(SOURCES[n]); } catch(Exception ignored) { } return ""; }
     public void removeBanner(String pkg) { if(LauncherPrefs.validPackage(pkg)) { new File(banners,pkg+".jpg").delete(); changed(); } }
     public void setFavorite(String id,boolean value) { update(id,"favorite",value); }
@@ -92,7 +94,10 @@ public final class PhotoStore {
     public Photo importImage(InputStream input,String title) throws IOException {
         synchronized(LOCK) {
             int localCount=0; for(Photo p:all()) if(!p.builtin) localCount++; if(localCount>=100) throw new IOException("L’album contient déjà 100 photos personnelles. Retirez-en une avant d’en ajouter.");
+            if(new android.os.StatFs(context.getFilesDir().getPath()).getAvailableBytes()<64L*1024*1024) throw new IOException("Espace insuffisant : gardez au moins 64 Mo libres.");
+            long albumBytes=0;File[] existing=photos.listFiles();if(existing!=null)for(File file:existing)albumBytes+=file.length();if(albumBytes>=64L*1024*1024)throw new IOException("Album limité à 64 Mo. Retirez quelques photos.");
             ensureDir(photos); String name=UUID.randomUUID()+".jpg"; File output=new File(photos,name); transcode(input,output,1920,1080);
+            if(albumBytes+output.length()>64L*1024*1024){output.delete();throw new IOException("Album limité à 64 Mo. Retirez quelques photos.");}
             String id="local:"+name; JSONArray a=records();
             try { JSONObject r=new JSONObject().put("id",id).put("title",cleanTitle(title)).put("credit","Album personnel").put("favorite",false).put("excluded",false); a.put(r); if(!meta.edit().putString("records",a.toString()).commit()) { output.delete(); throw new IOException("Impossible d’enregistrer l’album."); }
                 changed(); return photo(r,id,"Photo personnelle","Album personnel",false);
@@ -131,5 +136,9 @@ public final class PhotoStore {
     private static Photo photo(JSONObject r,String id,String title,String credit,boolean builtin) { return new Photo(id,r==null?title:r.optString("title",title),r==null?credit:r.optString("credit",credit),r!=null&&r.optBoolean("favorite"),r!=null&&r.optBoolean("excluded"),builtin); }
     private static String cleanTitle(String s) { if(s==null||s.trim().isEmpty()) return "Photo personnelle"; s=s.replaceAll("[\\p{Cntrl}]"," ").trim(); return s.substring(0,Math.min(100,s.length())); }
     private static void ensureDir(File f) throws IOException { if(!f.isDirectory()&&!f.mkdirs()) throw new IOException("Stockage interne inaccessible."); }
-    private void changed() { new LauncherPrefs(context).changed(); }
+    private void changed() {
+        LauncherPrefs prefs = new LauncherPrefs(context);
+        prefs.prefs().edit().putInt("image_revision", prefs.getInt("image_revision", 0) + 1).apply();
+        prefs.changed();
+    }
 }

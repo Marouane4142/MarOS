@@ -19,7 +19,7 @@ import android.widget.TextView;
 public final class RemoteBridgeActivity extends Activity {
     private final Handler handler = new Handler();
     private TextView state;
-    private final TextView[] keys = new TextView[4];
+    private final TextView[] keys = new TextView[RemoteButtonService.TARGETS.length];
     private int consumedKey = -1;
     private final Runnable refresh = new Runnable() {
         public void run() { update(); handler.postDelayed(this, 500); }
@@ -34,10 +34,10 @@ public final class RemoteBridgeActivity extends Activity {
         column.setPadding(dp(48), dp(26), dp(48), dp(24));
         column.setBackground(MarOSUI.background());column.addView(MarOSUI.brand(this,false),new LinearLayout.LayoutParams(-1,dp(52)));
         TextView title = text("Votre télécommande", 26); title.setTypeface(null, Typeface.BOLD); column.addView(title);
-        column.addView(text("Les quatre touches dédiées ouvrent vos applications depuis tout écran.\nLa navigation, le volume, la voix et le bouton Accueil gardent leur fonctionnement.", 11));
+        column.addView(text("Vos touches dédiées ouvrent YouTube, Netflix, les applications et Prime Video. Xiaomi TV+ ouvre TiviMate.\nLa navigation, le volume, la voix et le bouton Accueil gardent leur fonctionnement.", 11));
         state = text("", 11); state.setPadding(0, dp(10), 0, dp(10)); column.addView(state);
         column.addView(button("Ouvrir les réglages d’accessibilité", () -> startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))));
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<RemoteButtonService.TARGETS.length; i++) {
             final String target = RemoteButtonService.TARGETS[i];
             final String label = RemoteButtonService.LABELS[i];
             keys[i] = button(label, () -> {
@@ -47,7 +47,7 @@ public final class RemoteBridgeActivity extends Activity {
             });
             column.addView(keys[i]);
         }
-        column.addView(button("Rétablir les quatre touches Xiaomi", () -> {
+        column.addView(button("Rétablir les touches Xiaomi", () -> {
             android.content.SharedPreferences.Editor edit = RemoteButtonService.prefs(this).edit();
             for(String target:RemoteButtonService.TARGETS) edit.remove("remote_key_"+target);
             edit.putString("remote_learning_target", "").putString("remote_learning_result", "Touches Xiaomi rétablies").apply(); update();
@@ -69,7 +69,7 @@ public final class RemoteBridgeActivity extends Activity {
         else if(!target.isEmpty()) {p.edit().putString("remote_learning_target", "").apply();message="Aucune touche détectée. Vous pouvez réessayer.";}
         else if(!p.getString("remote_learning_result", "").isEmpty()) message += "\n"+p.getString("remote_learning_result", "");
         state.setText(message);
-        for(int i=0;i<4;i++)keys[i].setText(RemoteButtonService.LABELS[i]+"  ·  Modifier la touche");
+        for(int i=0;i<keys.length;i++)keys[i].setText(RemoteButtonService.LABELS[i]+"  ·  Modifier la touche");
     }
     @Override protected void onResume(){super.onResume();handler.post(refresh);}
     @Override protected void onPause(){

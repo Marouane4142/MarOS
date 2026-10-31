@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">MarOS</string>
+    <string name="remote_service_label">Boutons de la télécommande MarOS</string>
     <string name="all_apps">TOUTES LES APPLIS</string>
     <string name="inputs">Entrées</string>
     <string name="wifi">Wi-Fi</string>

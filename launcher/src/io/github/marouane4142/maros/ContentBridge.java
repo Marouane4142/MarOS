@@ -22,6 +22,7 @@ public final class ContentBridge {
     public int scanned,excluded;private final java.util.Map<String,Integer> sourceCounts=new java.util.LinkedHashMap<>();
     public List<Item> load(){return load("all",false);}
     public List<Item> load(String service,boolean unfinished){
+        if(RoomData.guest(context)){status="Lectures masquées en mode invités";return new ArrayList<>();}
         List<Item> records=new ArrayList<>();long now=System.currentTimeMillis();scanned=0;excluded=0;sourceCounts.clear();
         readWatchNext(records,now);List<Item> observations=PlaybackHistory.items(context);
         for(Item item:observations){
@@ -35,14 +36,40 @@ public final class ContentBridge {
             item.subtitle=when(item.lastSeen)+(item.episode.isEmpty()?"":"  ·  "+item.episode)+(item.completed?"  ·  Terminé":"");visible.add(item);
         }
         List<Item> out=RecentPolicy.chronological(visible,now,12,12);
+        enrichArtwork(out);
         for(Item item:out)sourceCounts.put(item.packageName,sourceCounts.containsKey(item.packageName)?sourceCounts.get(item.packageName)+1:1);
         status=out.isEmpty()?"Aucune lecture récente datée partagée pour ce service.":"Dernière lecture réelle · du plus récent au plus ancien";return out;
+    }
+    /** Artwork-only join: suggestions never become watched records or change viewing dates. */
+    private void enrichArtwork(List<Item> items){
+        java.util.Map<Item,Set<String>> matches=new java.util.HashMap<>();
+        for(Item item:items)if(item.imageUri.isEmpty())matches.put(item,new HashSet<>());
+        if(matches.isEmpty())return;
+        for(Uri table:new Uri[]{TvContract.WatchNextPrograms.CONTENT_URI,TvContract.PreviewPrograms.CONTENT_URI}){
+            try(Cursor c=context.getContentResolver().query(table,null,null,null,null)){
+                if(c==null)continue;int read=0;
+                while(c.moveToNext()&&read++<2000){
+                    String image=first(value(c,"thumbnail_uri"),value(c,"poster_art_uri"));if(image.isEmpty())continue;
+                    String pkg=value(c,"package_name"),title=RecentPolicy.normal(value(c,"title")),episode=RecentPolicy.normal(value(c,"episode_title"));
+                    String id=first(value(c,"content_id"),value(c,"internal_provider_id"));
+                    for(java.util.Map.Entry<Item,Set<String>> entry:matches.entrySet()){
+                        Item item=entry.getKey();if(!pkg.equals(item.packageName))continue;
+                        String name=RecentPolicy.normal(item.title);
+                        boolean same=!id.isEmpty()&&id.equals(item.id)||!episode.isEmpty()&&name.equals(episode)
+                            ||!title.isEmpty()&&name.equals(title)&&(item.episode.isEmpty()||RecentPolicy.normal(item.episode).equals(episode));
+                        if(same)entry.getValue().add(image);
+                    }
+                }
+            }catch(SecurityException ignored){}catch(RuntimeException ignored){}
+        }
+        // Ambiguous episode matches remain explicitly without artwork.
+        for(java.util.Map.Entry<Item,Set<String>> entry:matches.entrySet())if(entry.getValue().size()==1)entry.getKey().imageUri=entry.getValue().iterator().next();
     }
     private void readWatchNext(List<Item> out,long now){
         try(Cursor cursor=context.getContentResolver().query(TvContract.WatchNextPrograms.CONTENT_URI,null,null,null,null)){
             if(cursor==null)return;while(cursor.moveToNext()&&scanned<2000){scanned++;Item item=new Item();item.watchNext=true;item.nextType=(int)number(cursor,"watch_next_type",-1);item.lastSeen=RecentPolicy.timestamp(number(cursor,"last_engagement_time_utc_millis",0));item.position=number(cursor,"last_playback_position_millis",0);item.duration=number(cursor,"duration_millis",0);
                 if(number(cursor,"browsable",1)==0||!RecentPolicy.continuation(item.nextType,item.position,item.duration,item.lastSeen,now)){excluded++;continue;}
-                item.title=value(cursor,"title");item.episode=first(value(cursor,"episode_title"),episode(cursor));item.imageUri=first(value(cursor,"poster_art_uri"),value(cursor,"thumbnail_uri"));item.intentUri=value(cursor,"intent_uri");item.packageName=value(cursor,"package_name");item.id=first(value(cursor,"content_id"),value(cursor,"internal_provider_id"),value(cursor,"_id"));item.seriesId=value(cursor,"series_id");
+                item.title=value(cursor,"title");item.episode=first(value(cursor,"episode_title"),episode(cursor));item.imageUri=first(value(cursor,"thumbnail_uri"),value(cursor,"poster_art_uri"));item.intentUri=value(cursor,"intent_uri");item.packageName=value(cursor,"package_name");item.id=first(value(cursor,"content_id"),value(cursor,"internal_provider_id"),value(cursor,"_id"));item.seriesId=value(cursor,"series_id");
                 if(item.title.isEmpty()||item.intentUri.isEmpty()||!PlaybackHistory.supported(item.packageName)){excluded++;continue;}out.add(item);
             }
         }catch(SecurityException ignored){status="Accès aux lectures partagées indisponible.";}catch(RuntimeException ignored){status="Ce fournisseur ne partage pas d’historique exploitable.";}
@@ -51,7 +78,7 @@ public final class ContentBridge {
     public static String when(long date){java.text.SimpleDateFormat f=new java.text.SimpleDateFormat("d MMM · HH:mm",java.util.Locale.FRENCH);long ago=System.currentTimeMillis()-date;if(ago>=0&&ago<3600000)return ago<60000?"À l’instant":"Il y a "+(ago/60000)+" min";return f.format(new java.util.Date(date));}
     public void hide(Item item){android.content.SharedPreferences p=context.getSharedPreferences("maros_playback_history",Context.MODE_PRIVATE);java.util.Set<String> hidden=new java.util.HashSet<>(p.getStringSet("hidden",new java.util.HashSet<>()));hidden.add(RecentPolicy.seriesKey(item));p.edit().putStringSet("hidden",hidden).apply();}
     public void resetHidden(){context.getSharedPreferences("maros_playback_history",Context.MODE_PRIVATE).edit().remove("hidden").apply();}
-    public JSONObject diagnostics(){JSONObject object=new JSONObject();JSONArray list=new JSONArray();try{for(Item i:load()){list.put(new JSONObject().put("title",i.title).put("package",i.packageName).put("when",i.lastSeen).put("position",i.position).put("duration",i.duration).put("source",i.source).put("watch_next_type",i.nextType).put("completed",i.completed));}object.put("items",list).put("scanned",scanned).put("excluded",excluded).put("order","lastSeen DESC").put("retention_days",30);}catch(JSONException ignored){}return object;}
+    public JSONObject diagnostics(){JSONObject object=new JSONObject();JSONArray list=new JSONArray();try{for(Item i:load()){list.put(new JSONObject().put("title",i.title).put("package",i.packageName).put("when",i.lastSeen).put("position",i.position).put("duration",i.duration).put("source",i.source).put("watch_next_type",i.nextType).put("completed",i.completed).put("has_image",!i.imageUri.isEmpty()));}object.put("items",list).put("scanned",scanned).put("excluded",excluded).put("order","lastSeen DESC").put("retention_days",30);}catch(JSONException ignored){}return object;}
     private static String value(Cursor c,String column){int i=c.getColumnIndex(column);return i<0||c.isNull(i)?"":c.getString(i);}
     private static long number(Cursor c,String column,long fallback){int i=c.getColumnIndex(column);return i<0||c.isNull(i)?fallback:c.getLong(i);}
     private static String first(String...values){for(String v:values)if(v!=null&&!v.trim().isEmpty())return v;return "";}
@@ -70,26 +97,7 @@ public final class ContentBridge {
             context.startActivity(i);recordLaunch(context,item.packageName);return true;
         }catch(Exception ignored){return false;}
     }
-    public static void recordLaunch(Context context,String pkg){
-        if(pkg==null||pkg.isEmpty()||pkg.equals(context.getPackageName()))return;
-        synchronized(ContentBridge.class){
-            android.content.SharedPreferences p=context.getSharedPreferences("tvhome_v2",Context.MODE_PRIVATE);
-            JSONArray out=new JSONArray();
-            try{
-                JSONObject first=new JSONObject();first.put("package",pkg);first.put("at",System.currentTimeMillis());out.put(first);
-                JSONArray old=new JSONArray(p.getString("recent_apps","[]"));
-                for(int i=0;i<old.length()&&out.length()<12;i++){
-                    JSONObject entry=old.optJSONObject(i);if(entry!=null&&!pkg.equals(entry.optString("package")))out.put(entry);
-                }
-            }catch(Exception ignored){ }
-            p.edit().putString("recent_apps",out.toString()).apply();
-        }
-    }
-    public static List<String> recentPackages(Context context){
-        List<String> result=new ArrayList<>();
-        try{JSONArray array=new JSONArray(context.getSharedPreferences("tvhome_v2",Context.MODE_PRIVATE).getString("recent_apps","[]"));
-            for(int i=0;i<array.length();i++){JSONObject o=array.optJSONObject(i);if(o!=null&&!o.optString("package").isEmpty())result.add(o.optString("package"));}
-        }catch(Exception ignored){ }
-        return result;
-    }
+    /** Opening an app does not create or retain a viewing observation. */
+    public static void recordLaunch(Context context,String pkg){ /* App-launch history removed. */ }
+    public static List<String> recentPackages(Context context){return new ArrayList<>();}
 }

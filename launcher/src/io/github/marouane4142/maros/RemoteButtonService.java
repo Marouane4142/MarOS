@@ -11,12 +11,23 @@ import android.view.KeyEvent;
 import android.view.accessibility.AccessibilityEvent;
 import android.widget.Toast;
 
-/** Filters only the four dedicated application buttons. No window content is requested. */
+/** Filters only dedicated application buttons. No window content is requested. */
 public final class RemoteButtonService extends AccessibilityService {
-    public static final String[] TARGETS = {"youtube", "netflix", "apps", "prime"};
-    public static final String[] LABELS = {"YouTube", "Netflix", "Applications", "Prime Video"};
-    private static final int[] DEFAULT_KEYS = {190, 193, 284, 194};
+    public static final String[] TARGETS = {"youtube", "netflix", "apps", "prime", "tivimate"};
+    public static final String[] LABELS = {"YouTube", "Netflix", "Applications", "Prime Video", "Xiaomi TV+ → TiviMate"};
+    // Xiaomi RC 2717:32b9: scan 150 (TV+) maps to BUTTON_5, not BUTTON_4.
+    private static final int[] DEFAULT_KEYS = {190, 193, 284, 194, 192};
     private final SparseBooleanArray consumed = new SparseBooleanArray();
+
+    @Override protected void onServiceConnected() {
+        super.onServiceConnected();
+        android.accessibilityservice.AccessibilityServiceInfo info = getServiceInfo();
+        if (info != null) {
+            info.flags |= android.accessibilityservice.AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS;
+            setServiceInfo(info);
+        }
+        Log.i("MarOSRemote", "Dedicated app buttons connected");
+    }
 
     public static SharedPreferences prefs(Context context) {
         return context.getSharedPreferences("tvhome_v2", Context.MODE_PRIVATE);
@@ -98,6 +109,7 @@ public final class RemoteButtonService extends AccessibilityService {
             if ("youtube".equals(target)) pkg = "com.google.android.youtube.tv";
             if ("netflix".equals(target)) pkg = "com.netflix.ninja";
             if ("prime".equals(target)) pkg = "com.amazon.amazonvideo.livingroom";
+            if ("tivimate".equals(target)) pkg = "ar.tvplayer.tv";
             if (pkg != null) {
                 intent = context.getPackageManager().getLeanbackLaunchIntentForPackage(pkg);
                 if (intent == null) intent = context.getPackageManager().getLaunchIntentForPackage(pkg);

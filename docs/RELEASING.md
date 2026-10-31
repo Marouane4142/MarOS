@@ -4,6 +4,8 @@ Official APKs must use the same private release signer for update continuity. Th
 
 The first public version is `4.0.0-beta.1`, versionCode `40000`, package `io.github.marouane4142.maros`. It is separate from the earlier private package. Raise versionCode monotonically for each future public APK. Keep versionName, CHANGELOG, build User-Agent and release notes consistent.
 
+The current development version is **5.0.0-beta.1**, versionCode **50000**, set in `launcher/build.gradle.kts`. Requirements and the distinction between local optimized signing and official signing are in [MIGRATION-5.md](MIGRATION-5.md).
+
 ## Before tagging
 
 1. Review the source diff, permissions, network behavior and third-party notices.

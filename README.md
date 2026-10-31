@@ -5,7 +5,7 @@
   <a href="https://github.com/Marouane4142/MarOS/actions/workflows/ci.yml"><img alt="Build and checks" src="https://github.com/Marouane4142/MarOS/actions/workflows/ci.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/code-MIT-87dcf5"></a>
   <img alt="Android 11 and later" src="https://img.shields.io/badge/Android-11%2B-87dcf5">
-  <img alt="Native Java" src="https://img.shields.io/badge/native-Java-87dcf5">
+  <img alt="Kotlin and Compose TV" src="https://img.shields.io/badge/Kotlin-Compose_TV-87dcf5">
 </p>
 
 **A personal home for Android TV and Google TV.** Native, remote-friendly, and free of advertising in the launcher. Your apps, your landscapes, your music — with a local phone companion.
@@ -16,21 +16,27 @@
 
 <img src="docs/assets/home.png" alt="MarOS running on an Android TV 11 emulator with YouTube and Play Store available" width="960">
 
-Actual clean-install Android TV emulator capture. Available favorites depend on installed apps; no personal accounts or viewing data are shown. [Settings preview](docs/assets/settings.png) · [Screenshot and backdrop credits](docs/assets/README.md).
+Historical version 4 clean-install Android TV emulator capture; version 5 now uses Compose for TV. Available favorites depend on installed apps; no personal accounts or viewing data are shown. [Settings preview](docs/assets/settings.png) · [Screenshot and backdrop credits](docs/assets/README.md).
 
 ## What you get
 
 - **Your essentials:** ordered favorites, app collections, hidden apps, custom banners and a shortcut to the installed Play Store.
-- **A quieter home:** Nature, Cinema and Minimal presets, rotating landscapes, a personal album and ambient mode.
+- **A quieter home:** Nature, Cinema, Aurora, Dune and Minimal presets, rotating landscapes, a personal album and ambient mode.
 - **Real media controls:** artwork, track information, playback and seeking through compatible Android media sessions.
 - **Recent viewing:** chronological, usable Watch Next entries and observed video sessions. No invented universal streaming history.
-- **Your phone as a companion:** scan a QR code, send photos, edit favorites, prepare searches, keep shortcuts and export preferences. No phone app or central server required.
+- **Your phone as a companion:** scan a QR code, send photos, edit favorites, prepare searches, keep shortcuts and export preferences. Room controls, media/volume, watchlist and validated personal ZIP backup are included. No phone app or central server required.
 - **Useful extras:** opt-in city weather, a local agenda and timer. Optional Jellyfin, Home Assistant, Wake-on-LAN, camera and Ollama-compatible connectors.
 - **Reversible installation tools:** explicit ADB device selection, a configuration snapshot and a journal of changes. Packages are disabled rather than uninstalled.
 
-## First public beta
+The Android account picker associates existing Google accounts with launcher profiles without a Cloud project. Calendars match the selected account after separate Android permission. File-scoped Drive backup is optional and needs your own TV OAuth client: [setup guide](docs/GOOGLE-SETUP.fr.md). Scenes, guest privacy and idle photo/series maintenance are integrated into the home, profile selector and content screens. Cast and remote voice input use the existing system Google apps. MarOS adds no voice recognition. See [features and limits](docs/VISION.fr.md).
 
-**v4.0.0-beta.1** is the first public MarOS release, derived from the private 4.0 iteration. The Android package is `io.github.marouane4142.maros`. Android **11 / API 30** is the minimum; the current target SDK is also 30.
+## Versions
+
+**5.0.0-beta.1** introduces Kotlin + Compose for TV HOME and MarOS Studio, reorderable shelves, local profiles, Google-linked profiles and a richer phone companion. The minimum remains Android 11/API 30; target SDK is 36. See [migration notes and limits](docs/MIGRATION-5.md). Public release assets remain separately published and signed.
+
+### Original public beta
+
+**v4.0.0-beta.1** is the first public MarOS release, derived from the private 4.0 iteration. The Android package is `io.github.marouane4142.maros`. Android **11 / API 30** is the minimum; that historical release targeted SDK 30.
 
 The predecessor was exercised on a Xiaomi TV Box S 2nd generation running Android 11. This public package has its own release signature and is an early beta: other remotes, manufacturers and Android versions need testing. The interface is currently primarily **French**. See [validation and limitations](docs/TESTING.md).
 
@@ -44,7 +50,7 @@ This public package is separate from the earlier private `com.mihir.tvhome` inst
 
 ## Build from source
 
-Requirements: Python 3.10+, JDK 11+, Android SDK platform and Build-Tools. A known CI configuration uses JDK 17, platform 34 and Build-Tools 34.0.0.
+Requirements: Python 3.10+, **JDK 21**, Android SDK platform **37.0** and Build-Tools **36.0.0**. Set `JAVA_HOME` and `ANDROID_HOME`.
 
 ```sh
 git clone https://github.com/Marouane4142/MarOS.git
@@ -54,13 +60,13 @@ python launcher/build.py --sdk /path/to/Android/Sdk
 
 On Windows, `python launcher/build.py --sdk "C:\path\to\Android\Sdk"` works too. Set `JAVA_HOME`, or pass `--java-home`. The result is `launcher/build/MarOS-debug.apk`, signed with an ignored local debug key. This command never connects to a TV.
 
-The build uses `aapt2`, `javac`, D8, `zipalign` and `apksigner` directly, without Gradle. It verifies signing, ZIP paths and the twelve bundled JPEGs. Official releases use a separate private key; see [releasing](docs/RELEASING.md). A local debug APK cannot update an official release signed with another key.
+The Python command drives the pinned Gradle wrapper, checks APK paths/assets and verifies the signature with SDK apksigner. `python launcher/build.py --local-release` produces an optimized R8 build signed with the local development key. Official releases use an external private key; see [releasing](docs/RELEASING.md). A local development APK cannot update an official release signed with another key.
 
 ```sh
 python tools/check.py
 ```
 
-Checks include Python/XML validation and the existing 17 chronology assertions. CI builds a debug artifact; official release APKs are separately signed.
+Checks include Python/XML validation and the existing 17 chronology assertions. Run `sh gradlew :launcher:testDebugUnitTest :launcher:lintDebug` (Windows: `gradlew.bat`) for Kotlin tests and Android Lint. CI builds a debug artifact; official release APKs are separately signed.
 
 ## Phone companion and privacy
 
@@ -82,7 +88,7 @@ tools/tv-session.py                       Checked, journaled ADB operations
 docs/                                    Installation, architecture and release notes
 ```
 
-The TV interface is native Java views, not a WebView. It does not need an AI model. Notification-listener access supports media sessions; accessibility access supports selected remote buttons. These optional permissions must be deliberately enabled. See [architecture](docs/ARCHITECTURE.md).
+HOME and Studio use Kotlin/Compose for TV; the existing native Java editors and services remain interoperable. It does not need an AI model. Notification-listener access supports media sessions; accessibility access supports selected remote buttons. These optional permissions must be deliberately enabled. See [architecture](docs/ARCHITECTURE.md).
 
 ## Limitations
 
@@ -95,3 +101,7 @@ Jellyfin, Home Assistant, Wake-on-LAN, cameras and the optional assistant requir
 MarOS builds on **[mihirgupta0900/tv-home](https://github.com/mihirgupta0900/tv-home)**, at base commit `19803542cd335e0b2643dfa73c18c38051354ffa`. The upstream MIT notice is retained; MarOS contributions are also MIT. See [LICENSE](LICENSE) and [provenance](docs/upstream.json).
 
 Third-party assets retain their own licenses: Lucide (ISC / applicable Feather MIT notices), Manrope (SIL OFL 1.1), Nayuki QR generator (MIT), and Wikimedia landscapes (their individual CC BY-SA licenses). See [third-party notices](THIRD_PARTY_NOTICES.md) and [wallpaper credits](launcher/WALLPAPER-CREDITS.md). The banner above is a brand illustration, not a device screenshot.
+
+### Navigation refinement
+
+The home now has an animated sliding menu focus, gently scaling app/episode cards and short view transitions. Frame values stay in draw/graphics phases; reduced motion remains available. A top-right avatar opens Google-linked users and the guest session. Daily settings are limited to Appearance, Applications and Phone. Google calendars automatically match the connected profile after Android permission, with no calendar-selection settings page. Google client setup remains a one-time developer prerequisite; account and app sign-in are not fabricated.

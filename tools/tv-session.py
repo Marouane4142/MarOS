@@ -215,6 +215,78 @@ class Session:
         entry["status"], entry[status + "_at"] = status, now()
         self.write()
 
+    def set_setting(self, namespace, key, value):
+        if namespace != "secure" or key not in {"enabled_notification_listeners", "enabled_accessibility_services", "accessibility_enabled", "screensaver_components"}:
+            raise RuntimeError("Unsupported special-access setting")
+        prefix = "settings --user %s " % self.user
+        values = dict(line.split("=", 1) for line in self.adb.shell(prefix + "list " + namespace).splitlines() if "=" in line)
+        if values.get(key) == value:
+            return
+        entry = self.prepare("setting", namespace=namespace, key=key, old_present=key in values, old_value=values.get(key, ""), target_value=value)
+        self.adb.shell(prefix + "put %s %s %s" % (namespace, key, shlex.quote(value)))
+        if self.adb.shell(prefix + "get %s %s" % (namespace, key)).strip() != value:
+            raise RuntimeError("Special-access readback failed")
+        self.finish(entry)
+
+    def notification_listener(self, component, enabled):
+        if not re.fullmatch(r"[A-Za-z0-9_.]+/[A-Za-z0-9_.]+", component):
+            raise RuntimeError("Invalid listener component")
+        raw = self.adb.shell("settings --user %s get secure enabled_notification_listeners" % self.user).strip()
+        old = component in raw.split(":")
+        if old == enabled:
+            return
+        entry = self.prepare("notification_listener", component=component, old_enabled=old, target_enabled=enabled)
+        self.set_notification_listener(component, enabled)
+        self.finish(entry)
+
+    def set_notification_listener(self, component, enabled):
+        # Settings.Secure alone is overwritten by NotificationManager's stored grants.
+        command = "allow_listener" if enabled else "disallow_listener"
+        self.adb.shell("cmd notification %s %s %s" % (command, shlex.quote(component), self.user))
+        raw = self.adb.shell("settings --user %s get secure enabled_notification_listeners" % self.user).strip()
+        if (component in raw.split(":")) != enabled:
+            raise RuntimeError("Notification listener grant readback failed")
+
+    def special_access(self, media, remote, replace, ambient=False, listings=False):
+        self.package_state(PACKAGE)
+        if listings:
+            permission = "android.permission.READ_TV_LISTINGS"
+            dump = self.adb.shell("dumpsys package " + PACKAGE)
+            if not re.search(re.escape(permission) + r": granted=true", dump):
+                entry = self.prepare("runtime_permission", package=PACKAGE, permission=permission, old_granted=False)
+                self.adb.shell("pm grant --user %s %s %s" % (self.user, PACKAGE, permission))
+                if not re.search(re.escape(permission) + r": granted=true", self.adb.shell("dumpsys package " + PACKAGE)):
+                    raise RuntimeError("TV listings permission grant failed")
+                self.finish(entry)
+        if replace and not re.fullmatch(r"[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+", replace):
+            raise RuntimeError("Invalid replacement package")
+        if media:
+            self.notification_listener(PACKAGE + "/" + PACKAGE + ".MediaListener", True)
+            if replace:
+                raw = self.adb.shell("settings --user %s get secure enabled_notification_listeners" % self.user).strip()
+                for component in raw.split(":"):
+                    if component.startswith(replace + "/"):
+                        self.notification_listener(component, False)
+        for enabled, key, service in [(remote, "enabled_accessibility_services", "RemoteButtonService")]:
+            if not enabled:
+                continue
+            raw = self.adb.shell("settings --user %s get secure %s" % (self.user, key)).strip()
+            components = [c for c in raw.split(":") if c and c != "null" and not (replace and c.startswith(replace + "/"))]
+            component = PACKAGE + "/" + PACKAGE + "." + service
+            if component not in components:
+                components.append(component)
+            self.set_setting("secure", key, ":".join(components))
+        if remote:
+            self.set_setting("secure", "accessibility_enabled", "1")
+        if ambient and replace:
+            raw = self.adb.shell("settings --user %s get secure screensaver_components" % self.user).strip()
+            components = raw.split(":")
+            replacement = PACKAGE + "/" + PACKAGE + ".AmbientDreamService"
+            selected = [replacement if item.startswith(replace + "/") else item for item in components]
+            if selected != components:
+                self.set_setting("secure", "screensaver_components", ":".join(selected))
+        print("Requested special access applied and journaled; unrelated services preserved.")
+
     def package_state(self, package, required=True):
         state = self.adb.states(self.user).get(package)
         if state is None or not state["installed"]:
@@ -331,6 +403,15 @@ class Session:
                     raise RuntimeError("Setting restore readback failed for " + key)
                 self.finish(entry, "restored")
         for entry in entries:
+            if entry["kind"] == "notification_listener":
+                self.set_notification_listener(entry["component"], entry["old_enabled"])
+                self.finish(entry, "restored")
+        for entry in entries:
+            if entry["kind"] == "runtime_permission":
+                command = "grant" if entry["old_granted"] else "revoke"
+                self.adb.shell("pm %s --user %s %s %s" % (command, self.user, shlex.quote(entry["package"]), shlex.quote(entry["permission"])))
+                self.finish(entry, "restored")
+        for entry in entries:
             if entry["kind"] == "set_home":
                 self.set_home_checked(self.snapshot["home"])
                 self.finish(entry, "restored")
@@ -360,7 +441,7 @@ def main():
     take.add_argument("--out", required=True)
     shot = subs.add_parser("screenshot")
     shot.add_argument("--out", required=True)
-    for command in ("disable", "install-new", "set-home", "restore"):
+    for command in ("disable", "install-new", "set-home", "restore", "special-access"):
         child = subs.add_parser(command)
         child.add_argument("--backup", required=True, help="Directory created by backup")
         if command == "disable":
@@ -368,6 +449,12 @@ def main():
         if command == "install-new":
             child.add_argument("apk")
             child.add_argument("--aapt")
+        if command == "special-access":
+            child.add_argument("--media", action="store_true")
+            child.add_argument("--remote", action="store_true")
+            child.add_argument("--replace-package")
+            child.add_argument("--ambient", action="store_true")
+            child.add_argument("--listings", action="store_true", help="Grant the normal TV-listings runtime permission")
     args = parser.parse_args()
     adb = ADB(args.adb, args.serial)
     if args.command == "backup":
@@ -383,6 +470,8 @@ def main():
             session.install_new(args.apk, args.aapt)
         elif args.command == "set-home":
             session.set_home()
+        elif args.command == "special-access":
+            session.special_access(args.media, args.remote, args.replace_package, args.ambient, args.listings)
         elif args.command == "restore":
             session.restore()
 

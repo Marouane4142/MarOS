@@ -58,13 +58,19 @@ public final class ResumeCardView extends FrameLayout {
     private final View imageShade;
     private final TextView fallback;
     private final String imageUri;
+    private final boolean imageOnly;
     private boolean attached;
     private int generation;
     private Future<?> pending;
     private ArtworkRequest request;
 
     public ResumeCardView(Context context,ContentBridge.Item item,Runnable open,View.OnFocusChangeListener externalFocus){
+        this(context,item,open,externalFocus,false);
+    }
+    /** Reuses the bounded, authenticated loader inside a Compose TV card. */
+    public ResumeCardView(Context context,ContentBridge.Item item,Runnable open,View.OnFocusChangeListener externalFocus,boolean imageOnly){
         super(context);
+        this.imageOnly=imageOnly;
         if(item==null)throw new IllegalArgumentException("A real content item is required");
         imageUri=item.imageUri==null?"":item.imageUri.trim();
         setFocusable(true);setClickable(true);setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
@@ -114,6 +120,13 @@ public final class ResumeCardView extends FrameLayout {
             if(focused){GradientDrawable border=new GradientDrawable();border.setColor(Color.TRANSPARENT);border.setCornerRadius(dp(13));border.setStroke(dp(2),MarOSUI.accent(context));setForeground(border);}else setForeground(null);
             if(externalFocus!=null)externalFocus.onFocusChange(view,focused);
         });
+        if(imageOnly){
+            for(int i=getChildCount()-1;i>=0;i--){View child=getChildAt(i);if(child!=artwork&&child!=imageShade)removeViewAt(i);}
+            setBackgroundColor(Color.TRANSPARENT);setForeground(null);setElevation(0);
+            imageShade.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,new int[]{0x00000000,0x00000000,0x55000000}));
+            setFocusable(false);setClickable(false);setOnFocusChangeListener(null);
+            setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+        }
     }
     private int dp(float value){return Math.round(value*getResources().getDisplayMetrics().density);}
     private static TextView label(Context context,int size,int color,String font){TextView view=new TextView(context);view.setTextSize(size);view.setTextColor(color);view.setTypeface(Typeface.create(font,Typeface.NORMAL));view.setIncludeFontPadding(false);return view;}
@@ -123,7 +136,7 @@ public final class ResumeCardView extends FrameLayout {
         return "À regarder";
     }
     @Override protected void onSizeChanged(int width,int height,int oldWidth,int oldHeight){
-        super.onSizeChanged(width,height,oldWidth,oldHeight);int thumbHeight=Math.min(height,Math.round(width*9f/16f));
+        super.onSizeChanged(width,height,oldWidth,oldHeight);int thumbHeight=imageOnly?height:Math.min(height,Math.round(width*9f/16f));
         for(View view:new View[]{artwork,imageShade,fallback}){LayoutParams p=(LayoutParams)view.getLayoutParams();if(p.height!=thumbHeight){p.height=thumbHeight;view.setLayoutParams(p);}}
     }
     @Override protected void onAttachedToWindow(){super.onAttachedToWindow();attached=true;loadArtwork();}
@@ -162,6 +175,13 @@ public final class ResumeCardView extends FrameLayout {
                 Bitmap cached=ART.get(uri);if(cached!=null&&!cached.isRecycled())bitmap=cached;
                 else{
                     Uri parsed=Uri.parse(uri);String scheme=parsed.getScheme();if(scheme==null)return;scheme=scheme.toLowerCase(Locale.ROOT);
+                    if(scheme.equals("maros-art")){
+                        File retained=HistoryArtwork.resolve(context,uri);
+                        if(retained==null)return;
+                        bitmap=decode(retained);
+                        if(bitmap==null)return;
+                        ART.put(uri,bitmap);
+                    }else{
                     if(!scheme.equals("https")&&!scheme.equals("http")&&!scheme.equals("content"))return;
                     body=File.createTempFile("resume-art-",".tmp",context.getCacheDir());
                     if(scheme.equals("content")){
@@ -175,6 +195,7 @@ public final class ResumeCardView extends FrameLayout {
                     if(bitmap==null)return;
                     if(cancelled){bitmap.recycle();return;}
                     ART.put(uri,bitmap);
+                    }
                 }
                 if(cancelled||bitmap==null)return;
                 final Bitmap result=bitmap;
@@ -195,6 +216,12 @@ public final class ResumeCardView extends FrameLayout {
                 HttpURLConnection current=(HttpURLConnection)address.openConnection();connection=current;
                 current.setConnectTimeout(3000);current.setReadTimeout(5000);current.setInstanceFollowRedirects(false);current.setUseCaches(false);
                 current.setRequestProperty("Accept","image/*");current.setRequestProperty("Connection","close");
+                // Credentials are scoped to images under the configured Jellyfin origin/path.
+                String base=new LauncherPrefs(context).getString("jellyfin_url","");
+                if(!base.isEmpty()&&address.toString().startsWith(base+"/Items/")&&address.getPath().contains("/Images/")){
+                    String token=new Secrets(context).get("jellyfin_token");
+                    if(!token.isEmpty())current.setRequestProperty("Authorization","MediaBrowser Token=\""+token.replace("\"","")+"\"");
+                }
                 int code=current.getResponseCode();
                 if(code==301||code==302||code==303||code==307||code==308){
                     String location=current.getHeaderField("Location");current.disconnect();connection=null;

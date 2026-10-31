@@ -15,6 +15,32 @@ public final class PlaybackHistory {
     private static final Set<String> VIDEO=new HashSet<>(Arrays.asList("com.crunchyroll.crunchyroid","com.netflix.ninja","com.amazon.amazonvideo.livingroom","ar.tvplayer.tv","com.orange.owtv.tv","com.disney.disneyplus","com.canal.android.canal","org.videolan.vlc","com.xiaomi.mitv.mediaexplorer","com.google.android.youtube.tv"));
     public static boolean supported(String pkg){return VIDEO.contains(pkg);}
     private static SharedPreferences prefs(Context c){return c.getSharedPreferences("maros_playback_history",Context.MODE_PRIVATE);}
+    /** Import dated observations from an owner-paired legacy export; never accept launch URIs. */
+    public static int importObservations(Context c,JSONArray items) throws JSONException {
+        if(items==null||items.length()>64)throw new JSONException("Historique trop volumineux");
+        List<JSONObject> merged=new ArrayList<>();long now=System.currentTimeMillis();int count=0;
+        synchronized(LOCK){
+            JSONArray current=array(prefs(c).getString("records","[]"));
+            for(int i=0;i<current.length();i++)if(current.optJSONObject(i)!=null)merged.add(current.getJSONObject(i));
+            for(int i=0;i<items.length();i++){
+                JSONObject item=items.optJSONObject(i);if(item==null)continue;
+                String pkg=item.optString("package"),title=item.optString("title").trim();long when=item.optLong("when");
+                if(!supported(pkg)||title.length()<2||title.length()>300||!RecentPolicy.recent(when,now))continue;
+                try{c.getPackageManager().getApplicationInfo(pkg,0);}catch(Exception ignored){continue;}
+                long duration=Math.max(0,Math.min(604800000,item.optLong("duration")));
+                long position=Math.max(0,Math.min(604800000,item.optLong("position")));
+                merged.add(new JSONObject().put("package",pkg).put("title",title).put("id",title)
+                    .put("when",when).put("position",position).put("duration",duration).put("image","")
+                    .put("subtitle","").put("source","migration"));count++;
+            }
+            merged.sort((a,b)->Long.compare(b.optLong("when"),a.optLong("when")));
+            Set<String> seen=new HashSet<>();JSONArray out=new JSONArray();
+            for(JSONObject item:merged){String key=item.optString("package")+":"+item.optString("id");
+                if(RecentPolicy.recent(item.optLong("when"),now)&&seen.add(key)&&out.length()<64)out.put(item);}
+            prefs(c).edit().putString("records",out.toString()).apply();
+        }
+        new LauncherPrefs(c).changed();return count;
+    }
     public static void record(Context context,MediaController controller,long playingSince){
         if(controller==null||!supported(controller.getPackageName()))return;
         try{MediaMetadata m=controller.getMetadata();PlaybackState state=controller.getPlaybackState();if(m==null||state==null||state.getState()!=PlaybackState.STATE_PLAYING&&state.getState()!=PlaybackState.STATE_PAUSED)return;
@@ -26,12 +52,13 @@ public final class PlaybackHistory {
             long when=System.currentTimeMillis();if(!playing){long update=state.getLastPositionUpdateTime();if(update<=0)return;when-=Math.max(0,elapsed-update);}
             if(!RecentPolicy.recent(when,System.currentTimeMillis()))return;
             String id=first(m.getString(MediaMetadata.METADATA_KEY_MEDIA_ID),title);String pkg=controller.getPackageName();
+            HistoryArtwork.remember(context,pkg,id,title,first(m.getString(MediaMetadata.METADATA_KEY_DISPLAY_SUBTITLE),""),m);
             JSONObject item=new JSONObject().put("package",pkg).put("title",title).put("id",id).put("when",when).put("position",position).put("duration",Math.max(0,m.getLong(MediaMetadata.METADATA_KEY_DURATION))).put("image",first(m.getString(MediaMetadata.METADATA_KEY_DISPLAY_ICON_URI),m.getString(MediaMetadata.METADATA_KEY_ART_URI),m.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI))).put("uri",first(m.getString(MediaMetadata.METADATA_KEY_MEDIA_URI),"")).put("subtitle",first(m.getString(MediaMetadata.METADATA_KEY_DISPLAY_SUBTITLE),""));
             synchronized(LOCK){JSONArray prior=array(prefs(context).getString("records","[]")),out=new JSONArray();out.put(item);for(int i=0;i<prior.length()&&out.length()<64;i++){JSONObject old=prior.optJSONObject(i);if(old==null||old.optString("package").equals(pkg)&&old.optString("id").equals(id))continue;if(RecentPolicy.recent(old.optLong("when"),System.currentTimeMillis()))out.put(old);}prefs(context).edit().putString("records",out.toString()).apply();}
         }catch(RuntimeException|JSONException ignored){}
     }
-    public static List<ContentBridge.Item> items(Context c){List<ContentBridge.Item> out=new ArrayList<>();JSONArray a=array(prefs(c).getString("records","[]"));for(int i=0;i<a.length();i++){JSONObject o=a.optJSONObject(i);if(o==null)continue;ContentBridge.Item r=new ContentBridge.Item();r.packageName=o.optString("package");r.title=o.optString("title");r.id=o.optString("id");r.lastSeen=o.optLong("when");r.position=o.optLong("position");r.duration=o.optLong("duration");r.imageUri=o.optString("image");r.intentUri="";r.episode=o.optString("subtitle");r.observed=true;r.source="session";r.watchNext=false;r.completed=RecentPolicy.completed(r.position,r.duration);out.add(r);}return out;}
-    public static void clear(Context c){prefs(c).edit().remove("records").apply();}
+    public static List<ContentBridge.Item> items(Context c){List<ContentBridge.Item> out=new ArrayList<>();JSONArray a=array(prefs(c).getString("records","[]"));for(int i=0;i<a.length();i++){JSONObject o=a.optJSONObject(i);if(o==null)continue;ContentBridge.Item r=new ContentBridge.Item();r.packageName=o.optString("package");r.title=o.optString("title");r.id=o.optString("id");r.lastSeen=o.optLong("when");r.position=o.optLong("position");r.duration=o.optLong("duration");r.imageUri=first(HistoryArtwork.find(c,r.packageName,r.id,r.title,o.optString("subtitle")),o.optString("image"));r.intentUri="";r.episode=o.optString("subtitle");r.observed=true;r.source=o.optString("source","session");r.watchNext=false;r.completed=RecentPolicy.completed(r.position,r.duration);out.add(r);}return out;}
+    public static void clear(Context c){prefs(c).edit().remove("records").apply();HistoryArtwork.clear(c);new LauncherPrefs(c).changed();}
     private static JSONArray array(String raw){try{return new JSONArray(raw);}catch(JSONException e){return new JSONArray();}}
     private static String first(String...s){for(String x:s)if(x!=null&&!x.trim().isEmpty())return x;return "";}
 }

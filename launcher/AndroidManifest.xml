@@ -1,23 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="io.github.marouane4142.maros"
-    android:versionCode="40000"
-    android:versionName="4.0.0-beta.1">
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.READ_TV_LISTINGS" />
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <uses-feature android:name="android.software.leanback" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
 
     <queries>
+        <package android:name="com.google.android.apps.mediashell" />
+        <package android:name="com.google.android.gms" />
+        <package android:name="com.google.android.apps.tv.launcherx" />
+        <package android:name="com.google.android.katniss" />
+        <package android:name="com.google.android.syncadapters.calendar" />
+        <package android:name="com.google.android.youtube.tv" />
+        <package android:name="com.google.android.youtube.tvmusic" />
+        <package android:name="com.google.android.tv.remote.service" />
         <package android:name="com.android.vending" />
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
         </intent>
     </queries>
 
@@ -43,14 +59,22 @@
                 <category android:name="android.intent.category.HOME" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
         </activity>
+        <activity android:name=".StudioActivity" android:exported="false" android:screenOrientation="landscape" />
+        <activity android:name=".ProfileActivity" android:exported="false" android:screenOrientation="landscape" />
+        <activity android:name=".ExperienceActivity" android:exported="false" android:screenOrientation="landscape" />
+        <service android:name=".MaintenanceJob" android:permission="android.permission.BIND_JOB_SERVICE" android:exported="true" />
         <activity android:name=".SettingsActivity" android:exported="false" android:screenOrientation="landscape" />
         <activity android:name=".HubActivity" android:exported="false" android:screenOrientation="landscape" />
         <activity android:name=".RemoteBridgeActivity" android:exported="false" android:screenOrientation="landscape" />
         <activity android:name=".AmbientActivity" android:exported="false" android:screenOrientation="landscape" />
         <receiver android:name=".HubActivity$TimerReceiver" android:exported="false" />
-        <service android:name=".CompanionService" android:exported="false" />
-        <service android:name=".RemoteButtonService" android:exported="true" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" android:label="Boutons de la tÃ©lÃ©commande MarOS">
+        <service android:name=".CompanionService" android:exported="false" android:foregroundServiceType="connectedDevice" />
+        <service android:name=".RemoteButtonService" android:exported="true" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" android:label="@string/remote_service_label">
             <intent-filter><action android:name="android.accessibilityservice.AccessibilityService" /></intent-filter>
             <meta-data android:name="android.accessibilityservice" android:resource="@xml/remote_accessibility" />
         </service>

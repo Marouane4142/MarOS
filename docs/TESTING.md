@@ -4,7 +4,15 @@
 
 `python tools/check.py` validates Python/XML inputs, distribution boundaries and the existing 17 JVM chronology assertions. `python launcher/build.py` compiles all sources and checks APK signing, alignment, ZIP path normalization and twelve landscape JPEGs. CI repeats the checks and build using a clean runner.
 
-These checks do not replace a physical TV test. The build intentionally targets API 30; Android 11 is the minimum. A broad compatibility claim for newer Android versions is not established by compilation against a newer platform.
+These checks do not replace a physical TV test. MarOS 5 targets API 36; Android 11/API 30 remains the minimum. A broad compatibility claim for newer Android versions is not established by compilation against a newer platform.
+
+## MarOS 5 checks
+
+Run `sh gradlew :launcher:testDebugUnitTest :launcher:lintDebug` (Windows: `gradlew.bat`). `python launcher/build.py --local-release` verifies the optimized signed APK and merged library profile. `tools/review_android.py --serial EXPLICIT_DEVICE --out shots/review --companion` checks the absence of a separate Reprendre tab, the essentials at the bottom of the first viewport and resume below the fold, DPAD navigation, Studio, paired API rejection, reversible profile/favorite edits, five themes, compact/large-text rendering and HOME returns. The explicit `--history-import FILE` option merges a real legacy history export through the paired API; it is a migration operation and is not undone with temporary visual settings. Wake-up is explicit because a running Android Dream can otherwise mask the activity. Screenshots and reports stay ignored.
+
+The optional `--experience` flag, together with `--companion`, checks owner phone commands, refusal to control third-party windows, guest visibility, real TVmaze searches and a temporary watchlist title. It downloads a private ZIP, validates it without applying, rejects a traversal archive, self-restores the same data and checks the previous-state archive. It requires a network-connected TV; a mock browser check is not a substitute for this device test. Treat the generated ZIP and screenshots as private files.
+
+Google OAuth and Drive require a real owner-configured client and explicit sign-in; follow [Google setup](GOOGLE-SETUP.fr.md). Test Cast playback from a real sender and distinguish receiver discovery from successful media loading. Frame timing must be measured with the same warm navigation sequence and device refresh rate; compilation does not establish 60 FPS.
 
 ## Development history
 
@@ -12,7 +20,7 @@ The private predecessor was exercised on Xiaomi TV Box S 2nd generation / Androi
 
 The public beta has a new package and signer, generic app defaults, opt-in city weather and a portable build. It is a distinct install. The initial release notes state what was tested for this exact public snapshot; tests of the predecessor are not presented as exhaustive certification of this package.
 
-## Public beta smoke result
+## Version 4 public beta smoke result
 
 The public app installed and ran on the Android TV 11 / API 30 emulator using a 1920×1080 display at 320 dpi. All eight recorded checks passed: native launch, settings overview, local page serving, rejection without a token, code pairing, session continuity in another app, availability back on MarOS and absence of a MarOS AndroidRuntime fatal exception.
 
@@ -36,3 +44,7 @@ Record the exact device/API, build/tag, steps, result and remaining limitations.
 ## Unvalidated integrations
 
 The first beta does not certify Chromecast/voice flows, every remote firmware, all streaming histories, Jellyfin installations, Home Assistant entities, Wake-on-LAN BIOS/network settings, cameras or an external model server. The app must not invent successful device state or universal resume support.
+
+## Version 5 Xiaomi validation
+
+The optimized Compose release variant passed 23 device checks on Xiaomi TV Box S 2nd generation / Android 11, including native Google account status without OAuth, guest privacy, phone controls, profiles, backup validation and restore. The native account-picker flow and separate Calendar permission were also exercised. Seven Kotlin tests, 17 chronology assertions and Android Lint passed. See the [sanitized report](qa/maros5-xiaomi.json) and [release notes](releases/5.0.0-beta.1.md). The official APK keeps the public release certificate and is compared against the validated local build for identical non-signing payload.
