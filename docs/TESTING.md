@@ -48,3 +48,5 @@ The first beta does not certify Chromecast/voice flows, every remote firmware, a
 ## Version 5 Xiaomi validation
 
 The optimized Compose release variant passed 23 device checks on Xiaomi TV Box S 2nd generation / Android 11, including native Google account status without OAuth, guest privacy, phone controls, profiles, backup validation and restore. The native account-picker flow and separate Calendar permission were also exercised. Seven Kotlin tests, 17 chronology assertions and Android Lint passed. See the [sanitized report](qa/maros5-xiaomi.json) and [release notes](releases/5.0.0-beta.1.md). The official APK keeps the public release certificate and is compared against the validated local build for identical non-signing payload.
+
+The clean Android TV 11 emulator also passed **17 checks**, including phone pairing, profile isolation, all themes, large text and repeated HOME returns. [Successful CI run](https://github.com/Marouane4142/MarOS/actions/runs/41185055771) · [recorded checks](qa/maros5-android-tv-smoke.json). The public README previews come from that clean installation, without personal account data.

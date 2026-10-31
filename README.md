@@ -14,9 +14,9 @@
 
 ## Preview
 
-<img src="docs/assets/home.png" alt="MarOS running on an Android TV 11 emulator with YouTube and Play Store available" width="960">
+<img src="docs/assets/home-v5.png" alt="MarOS 5 Compose home on a clean Android TV 11 emulator" width="960">
 
-Historical version 4 clean-install Android TV emulator capture; version 5 now uses Compose for TV. Available favorites depend on installed apps; no personal accounts or viewing data are shown. [Settings preview](docs/assets/settings.png) · [Screenshot and backdrop credits](docs/assets/README.md).
+Actual MarOS 5 clean-install Android TV emulator capture. Available favorites depend on installed apps; no personal accounts or viewing data are shown. [Settings preview](docs/assets/studio-v5.png) · [Screenshot and backdrop credits](docs/assets/README.md).
 
 ## What you get
 
@@ -104,4 +104,4 @@ Third-party assets retain their own licenses: Lucide (ISC / applicable Feather M
 
 ### Navigation refinement
 
-The home now has an animated sliding menu focus, gently scaling app/episode cards and short view transitions. Frame values stay in draw/graphics phases; reduced motion remains available. A top-right avatar opens Google-linked users and the guest session. Daily settings are limited to Appearance, Applications and Phone. Google calendars automatically match the connected profile after Android permission, with no calendar-selection settings page. Google client setup remains a one-time developer prerequisite; account and app sign-in are not fabricated.
+The home now has an animated sliding menu focus, gently scaling app/episode cards and short view transitions. Frame values stay in draw/graphics phases; reduced motion remains available. A top-right avatar opens users and the guest session. Daily settings are limited to Appearance, Applications and Phone. Google calendars automatically match the selected profile after Android permission, with no calendar-selection settings page. Native account selection needs no Cloud client; optional Drive authorization needs its own TV OAuth client.

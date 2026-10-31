@@ -55,7 +55,7 @@ Une application en mode Test peut demander une nouvelle autorisation après expi
 
 L’agenda ne possède plus de page de réglages ni de liste de calendriers à cocher. Après le choix du compte de la box, **Afficher mon agenda Google** permet d’autoriser la lecture Android des agendas. MarOS affiche automatiquement les calendriers visibles et synchronisés dont le compte Google correspond exactement au profil actif. Les occurrences récurrentes sont développées par Android. Le mode invité masque ces données ; changer de profil change le compte recherché.
 
-L’autorisation Google et la présence du compte dans Android restent deux éléments distincts : un nouveau compte connecté uniquement à MarOS n’ajoute pas silencieusement un compte système à la Xiaomi. Si Android ne synchronise aucun calendrier pour ce compte, MarOS n’invente pas de rendez-vous. Le bouton contextuel **Compte Android** du profil permet d’accéder à la synchronisation native. Le flux OAuth TV de Google ne permet pas Calendar API ; une connexion cloud directe indépendante du fournisseur Android demanderait un autre parcours OAuth autorisé.
+L’autorisation Google et la présence du compte dans Android restent deux éléments distincts : un nouveau compte connecté uniquement à MarOS n’ajoute pas silencieusement un compte système à la Xiaomi. Si Android ne synchronise aucun calendrier pour ce compte, MarOS n’invente pas de rendez-vous. Le bouton contextuel **Comptes Android** du profil permet d’accéderder à la synchronisation native. Le flux OAuth TV de Google ne permet pas Calendar API ; une connexion cloud directe indépendante du fournisseur Android demanderait un autre parcours OAuth autorisé.
 
 ## Cast, voix, photos et téléphone
 

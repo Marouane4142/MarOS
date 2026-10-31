@@ -1,0 +1,91 @@
+{
+  "package": "io.github.marouane4142.maros",
+  "checks": [
+    {
+      "name": "Compose HOME launches with a readable native screen",
+      "pass": true
+    },
+    {
+      "name": "Horizontal dock navigation leaves the first viewport fixed",
+      "pass": true
+    },
+    {
+      "name": "Resume is below the first viewport and becomes visible only when navigating down past essentials",
+      "pass": true
+    },
+    {
+      "name": "DPAD selects the video catalog",
+      "pass": true
+    },
+    {
+      "name": "Repeated directional focus changes remain responsive",
+      "pass": true
+    },
+    {
+      "name": "Remote MENU opens the Compose personalization screen",
+      "pass": true
+    },
+    {
+      "name": "Daily settings contain only appearance, apps and phone",
+      "pass": true
+    },
+    {
+      "name": "Companion requires pairing and rejects foreign origins",
+      "pass": true
+    },
+    {
+      "name": "Phone changes favorite order and restores it exactly",
+      "pass": true
+    },
+    {
+      "name": "140 percent text remains usable and the phone session survives an app change",
+      "pass": true
+    },
+    {
+      "name": "All five themes persist, render and preserve the compact layout",
+      "pass": true
+    },
+    {
+      "name": "Extra compact layout remains available independently of text size",
+      "pass": true
+    },
+    {
+      "name": "Local profiles isolate visual preferences",
+      "pass": true
+    },
+    {
+      "name": "Paired phone receives a local banner preview",
+      "pass": true
+    },
+    {
+      "name": "Temporary review changes restored to the original settings",
+      "pass": true
+    },
+    {
+      "name": "Repeated returns from Android Settings keep HOME usable",
+      "pass": true
+    },
+    {
+      "name": "No fatal exception for the current launcher process",
+      "pass": true
+    }
+  ],
+  "model": "AOSP TV on x86",
+  "api": "30",
+  "home_return_total_time_ms": [
+    3437,
+    3437,
+    3437
+  ],
+  "home_return_command_elapsed_ms": [
+    747,
+    417,
+    470
+  ],
+  "timing_note": "Android 11 may repeat a previous TotalTime for HOT returns; command elapsed includes ADB transport and is not an input-to-photon measurement.",
+  "pss_kib": 92780,
+  "source_run": "https://github.com/Marouane4142/MarOS/actions/runs/41185055771",
+  "source_commit": "44c0022cb1472caa63f42d11fde78337b6c65253",
+  "date": "2026-10-31",
+  "apk_signing": "CI debug; official release signing checked separately"
+}
